@@ -9,3 +9,10 @@ class ErrorHandling:
             if not key in request.keys(): #리퀘스트의 키값에 키값이 있는지 확인
                 dict[key] = "%s field is required" %key
         return dict
+
+    def none_bundle():
+        dict = {}
+        bundle_name = "'sending'"
+        message = "message"
+        dict[message] = "Send it in a bundle name %s" %bundle_name
+        return dict

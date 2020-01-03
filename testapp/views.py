@@ -40,7 +40,7 @@ from function import returns as Return_Module
 #     posts = User.objects.all()
 #     post_list = serializers.serialize('json', posts)
 #     return HttpResponse(post_list, content_type="text/json-comment-filtered")
-
+request_bundle = "sending"
 
 ##############################
 #########이메일 인증###########
@@ -50,18 +50,25 @@ class EmailAuthentication(APIView):
     def get(self, request, format=None):
         feild_name = "email"
         random_number = ""
+
         # 에러 처리부분 성공 조건이 아니면 함수 리턴
-        if not feild_name in request.GET.keys(): #필드에 이메일이 없을 경우
+        if not request_bundle in request.GET.keys():
+            dict = Error_Module.ErrorHandling.none_bundle()
+            result = Return_Module.ReturnPattern.error_text(**dict)
+            return Response(result,status = status.HTTP_404_NOT_FOUND)
+
+        parse = Return_Module.string_to_dict(request.GET)
+        if not feild_name in parse.keys(): #필드에 이메일이 없을 경우
             dict = Error_Module.ErrorHandling.none_feild(feild_name,**request.GET.dict())
             result = Return_Module.ReturnPattern.error_text(**dict)
             return Response(result,status = status.HTTP_404_NOT_FOUND)
             ######################난수 생성
-        elif Email_Module.is_valid(request.GET["email"]): #이메일 필드의 형식이 이메일이 아닐경우
+        elif Email_Module.is_valid(parse["email"]): #이메일 필드의 형식이 이메일이 아닐경우
             dict = {feild_name:"Not an email pattern"}
             result = Return_Module.ReturnPattern.error_text(**dict)
             return Response(result,status = status.HTTP_404_NOT_FOUND)
 
-        user = User.objects.filter(email=request.GET['email'])
+        user = User.objects.filter(email=parse['email'])
         if user:
             result = Return_Module.ReturnPattern.success_text("Duplicate email",result=False, code=random_number)
             return Response(result)
@@ -70,7 +77,7 @@ class EmailAuthentication(APIView):
 
             subject = '서버에서 발송된 이메일'
             message = '인증코드: '+ random_number
-            user_email = request.GET["email"]
+            user_email = parse["email"]
 
             email = EmailMessage(subject,message,to=[user_email])
 
@@ -89,15 +96,24 @@ class UserCreate(APIView):
     permission_classes = []
     def post(self, request, format=None):
 
-        data = request.data['sending']
         parameter_list = ["email", "password", "nickname"]
+        # 에러 처리부분 성공 조건이 아니면 함수 리턴
+        if not request_bundle in request.data.keys():
+            dict = Error_Module.ErrorHandling.none_bundle()
+            result = Return_Module.ReturnPattern.error_text(**dict)
+            return Response(result,status = status.HTTP_404_NOT_FOUND)
+
+
+
+        parse = Return_Module.string_to_dict(request.data)
+
         for required in parameter_list: #필수 필드가 포함이 되어 있는지 확인
-            if not required in data.keys():
-                dict = Error_Module.ErrorHandling.none_feild(*parameter_list,**data)
+            if not required in parse.keys():
+                dict = Error_Module.ErrorHandling.none_feild(*parameter_list,**parse)
                 result = Return_Module.ReturnPattern.error_text(**dict)
                 return Response(result,status = status.HTTP_404_NOT_FOUND)
 
-        user = User.objects.filter(nickname=data['nickname'])
+        user = User.objects.filter(nickname=parse['nickname'])
 
 
 
@@ -105,15 +121,14 @@ class UserCreate(APIView):
             result = Return_Module.ReturnPattern.success_text(result=False, message="Duplicate nickname")
             return Response(result)
 
-        serializer = UserCreateSerializer(data=data)
+        serializer = UserCreateSerializer(data=parse)
         if serializer.is_valid():
-            user = User.objects.create(email = data["email"], password = data["password"], nickname = data["nickname"])
-            user.set_password(data['password'])
-            user.save()
-            # serializer.save()
+            # user = User.objects.create(email = parse["email"], password = parse["password"], nickname = parse["nickname"])
+            # user.set_password(parse['password'])
+            # user.save()
+
             result = Return_Module.ReturnPattern.success_text("Create success",result=True)
-            json_val = json.dumps(result)
-            return Response(json_val, status= status.HTTP_201_CREATED)
+            return Response(result, status= status.HTTP_201_CREATED)
 
 
 ##############################
@@ -135,17 +150,44 @@ class Login(APIView):
         return Response(result)
 
 
-
-
 class Test(APIView):
     permission_classes = []
     def post(self, request, format=None):
+        repl = Return_Module.ReturnPattern.string_to_dict(request.data)
+        repl['nickname'] = "asdasd"
+        # asd = repl['nickname']
+        result = Return_Module.ReturnPattern.success_text("Create success",**repl)
+        # bb = repl.replace("'",'"')
+        # json = json.loads(repl)
+        # json = json.loads(aa)
+        # json = json.loads(aa)
+        # asd = json.loads(request.data)
         # load = json.loads(request.data)
+        # loads
+        # asd = json.dumps(request.data.dict())
+        # serializer = TestSerializer(asd)
+        # aa = request.data['sending']
+        return Response(str(result))
 
-        asd = json.dumps(request.data.dict())
-        serializer = TestSerializer(asd)
-        aa = request.data['sending']
-        return Response(aa['email'])
+
+class Test2(APIView):
+    permission_classes = []
+    def get(self, request, format=None):
+        repl = Return_Module.ReturnPattern.string_to_dict(request.data)
+        repl['nickname'] = "asdasd"
+        # asd = repl['nickname']
+        result = Return_Module.ReturnPattern.success_text("Create success",**repl)
+        # bb = repl.replace("'",'"')
+        # json = json.loads(repl)
+        # json = json.loads(aa)
+        # json = json.loads(aa)
+        # asd = json.loads(request.data)
+        # load = json.loads(request.data)
+        # loads
+        # asd = json.dumps(request.data.dict())
+        # serializer = TestSerializer(asd)
+        # aa = request.data['sending']
+        return Response(str(result))
             # return Response(random_string)
 # class Login(APIView):
 #     permission_classes = []

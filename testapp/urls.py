@@ -15,5 +15,6 @@ urlpatterns = [
     path('user', views.UserCreate.as_view()),
     path('email-authen', views.EmailAuthentication.as_view()),
     path('test', views.Test.as_view()),
+    path('test2', views.Test.as_view()),
 ]
 # urlpatterns = format_suffix_patterns(urlpatterns)
