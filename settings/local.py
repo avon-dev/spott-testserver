@@ -1,6 +1,6 @@
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
-from .settings.py import *
+from .settings import *
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
