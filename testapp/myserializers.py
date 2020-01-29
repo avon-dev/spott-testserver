@@ -29,3 +29,10 @@ class TestSerializer(serializers.ModelSerializer):
         model = User
         fields = ('email','password','nickname',)
         # read_only_fields = ('created_at',)
+
+
+class PostSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Post
+        fields = ('id' ,'posts_image', 'latitude', 'longitude',)
+        # read_only_fields = ('created_at',)

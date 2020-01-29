@@ -14,7 +14,9 @@ urlpatterns = [
     # path('', include(router.urls)),
     path('user', views.UserCreate.as_view()),
     path('email-authen', views.EmailAuthentication.as_view()),
+    path('posts', views.Posts.as_view()),
     path('test', views.Test.as_view()),
     path('test2', views.Test.as_view()),
+    # path('auto', views.AutoCreate.as_view()),
 ]
 # urlpatterns = format_suffix_patterns(urlpatterns)

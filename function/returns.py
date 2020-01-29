@@ -21,3 +21,11 @@ def string_to_dict(request):
     result = json.loads(re_string)
 
     return result
+
+
+def multi_string_to_dict(request):
+    re_string = request["sending"]
+    convert = json.loads(re_string)
+    result = json.loads(convert)
+
+    return result

@@ -4,6 +4,11 @@ from .models import *
 
 
 class UserAdmin(admin.ModelAdmin):
-    list_display = ['email', 'created', 'date_joined', 'last_login']
+    list_display = ['user_uid', 'date_joined', 'last_login', 'is_staff']
 
 admin.site.register(User, UserAdmin)
+admin.site.register(Post)
+admin.site.register(Hashtag)
+admin.site.register(Comment)
+admin.site.register(PostLike)
+admin.site.register(Scrap)

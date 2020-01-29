@@ -41,8 +41,24 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-
+    'debug_toolbar',
+    'storages',
+    'sslserver',
 ]
+
+###########################AWS
+AWS_ACCESS_KEY_ID = 'AKIA2EML6KRBANIAVX6X' # .csv 파일에 있는 내용을 입력 Access key ID
+AWS_SECRET_ACCESS_KEY = 'cNXX5JilDNg1RWNMbjrIge8AEH5382ty909qVvtZ' # .csv 파일에 있는 내용을 입력 Secret access key
+AWS_REGION = 'ap-northeast-2'
+
+###S3 Storages
+AWS_STORAGE_BUCKET_NAME = 'avon-spott-imageserver' # 설정한 버킷 이름
+AWS_S3_CUSTOM_DOMAIN = '%s.s3.%s.amazonaws.com' % (AWS_STORAGE_BUCKET_NAME,AWS_REGION)
+AWS_S3_OBJECT_PARAMETERS = {
+    'CacheControl': 'max-age=86400',
+}
+DEFAULT_FILE_STORAGE = 'project.asset_storage.MediaStorage'
+
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
@@ -104,7 +120,13 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'request_logging.middleware.LoggingMiddleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
+
+##############################################
+################디버그 툴바 아이피#############
+# 공인 아이피 주소를 적는다
+INTERNAL_IPS = ['220.72.242.246']
 
 LOGGING = {
     'version': 1,

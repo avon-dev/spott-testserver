@@ -17,6 +17,7 @@ from django.contrib import admin
 from django.urls import path, include
 # from rest_framework_jwt.views import obtain_jwt_token, verify_jwt_token, refresh_jwt_token #JWT 인증을 위해 필요한 요소를 불러온다
 from rest_framework_simplejwt import views as jwt_views
+from django.conf import settings
 # from rest_framework_simplejwt.views import (
 #     TokenObtainSlidingView,
 #     TokenRefreshSlidingView,
@@ -31,3 +32,10 @@ urlpatterns = [
     # path('api/token/refresh/', TokenRefreshSlidingView.as_view(), name='token_refresh'),
     path('spott/', include('testapp.urls'))
 ]
+
+
+if settings.DEBUG:
+    import debug_toolbar
+    urlpatterns += [
+        path('__debug__/', include(debug_toolbar.urls)),
+    ]
