@@ -1,3 +1,0 @@
-stunnel /home/ubuntu/httpsfiles/stunnel/dev_https.conf &
-#python3 manage.py runserver &
-HTTPS=1 python3 manage.py runserver 8001 
