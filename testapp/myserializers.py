@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import *
-
+import datetime
 class UserCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -12,6 +12,16 @@ class UserCreateSerializer(serializers.ModelSerializer):
         #     user.set_password(validated_data['password'])
         #     user.save()
         #     return user
+
+
+class HomeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Post
+        fields = ('id','posts_image',"created",)
+        # read_only_fields = ('created_at',)
+
+
+
 
 class LoginSerializer(serializers.ModelSerializer):
     class Meta:
