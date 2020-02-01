@@ -9,7 +9,7 @@ class Posts(APIView):
         lat_sw = data['lat_sw']
         lng_sw = data['lng_sw']
         posts_data = Post.objects.filter(latitude__range=[lat_sw,lat_ne],longitude__range=[lng_sw,lng_ne]).\
-        order_by('id')
+        order_by('-id')
         serializers = PostSerializer(posts_data, many = True)
         dict = {"payload":serializers.data}
         posts_json = json.dumps(dict)

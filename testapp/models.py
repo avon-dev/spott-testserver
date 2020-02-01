@@ -1,15 +1,12 @@
-# from .assemble_model.user_model import user_model as user
-# from assembel_model import post_model
-# from assembel_model import postlike_model
-# from assembel_model import scrap_model
-# from assembel_model import comment_model
-# from assembel_model import hashtag_model
-# import assembel_model.user_model
-# import assembel_model.post_model
-# import assembel_model.postlike_model
-# import assembel_model.scrap_model
-# import assembel_model.comment_model
-# import assemble_model.hashtag_model
+# from testapp.assemble_model.user_model import *
+# from testapp.assembel_model.hashtag_model import *
+# from testapp.assembel_model.post_model import *
+# from testapp.assembel_model.comment_model import *
+# from testapp.assembel_model.postlike_model import *
+# from testapp.assembel_model.scrap_model import *
+
+
+
 
 
 
@@ -81,23 +78,24 @@ class User(AbstractBaseUser, PermissionsMixin): #나중에 널 값 처리
 # 스크랩을 취소 한다는건 해당 스크랩 테이블에서 레코드가 지워진다는 것을 뜻함
 # 게시물이 지워졌을 때 연결 돼 있는 해당 스크랩까지 지워지도록 구현
 # 스크랩 날짜를 구해야 될까??? 딱히??? 안 구해도 될거 같다.
-class Hashtag(models.Model): #! !댓글, !작성일, !수정일, !삭제일, !삭제여부
-    name = models.CharField(max_length = 255)
-
-
-    def __str__(self):
-        return self.name
-
+# class Hashtag(models.Model): #! !댓글, !작성일, !수정일, !삭제일, !삭제여부
+#     name = models.CharField(max_length = 255)
+#
+#
+#     def __str__(self):
+#         return self.name
 
 
 
 class Post(models.Model): #!내용(conents), !작성일, !수정일, !공개여부(public),
                             # !게시물 신고 여부, !신고 날짜, 부적절 게시물 여부(problem), !삭제여부, !삭제 날짜
+    user = models.ForeignKey(User,on_delete=models.CASCADE, related_name= 'get_user') #get_post로 변경
     posts_image = models.ImageField(upload_to = 'post') #R
     back_image = models.ImageField(upload_to = 'postb') #R
     latitude = models.FloatField() #R
     longitude = models.FloatField() #R
     contents = models.TextField(verbose_name = '내용') #내용
+    views = models.IntegerField(default = 0)
     created = models.DateTimeField(auto_now_add=True) #작성일
     modify_date = models.DateTimeField(null = True, blank = True) #게시글 수정일
     public = models.BooleanField(default = False) #공개여부
@@ -106,16 +104,28 @@ class Post(models.Model): #!내용(conents), !작성일, !수정일, !공개여�
     problem = models.BooleanField(default = False)
     is_active = models.BooleanField(default = True)
     delete_date = models.DateTimeField(null = True, blank = True)
-    hashtags = models.ManyToManyField(Hashtag)
-    like_users = models.ManyToManyField('User', through = 'PostLike',related_name= 'like_users')
-    scrap_users = models.ManyToManyField('User', through = 'Scrap',related_name= 'scrap_users')
+    hashtag = models.ManyToManyField('User', through='HashTag',related_name='get_hashtag')
+    like_user = models.ManyToManyField('User', through = 'PostLike',related_name= 'get_like')
+    comment = models.ManyToManyField('User', through='Comment',related_name='get_comment')
     def __str__(self):
         return self.contents
 
+class UserData(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE,related_name= 'user_data')
+    scrap_users = models.ManyToManyField('Post', through = 'Scrap',related_name= 'get_scrap')
 
+
+class HashTag(models.Model): #! !댓글, !작성일, !수정일, !삭제일, !삭제여부
+    user = models.ForeignKey(User,on_delete=models.CASCADE, related_name= 'user_hashtag')
+    post = models.ForeignKey(Post,on_delete=models.CASCADE, related_name= 'post_hashtag')
+    tag_name = models.CharField(max_length=250,verbose_name = '태그명') #태그
+    created = models.DateTimeField(auto_now_add=True) #작성일
+    delete_date = models.DateTimeField(null = True, blank = True)
 
 
 class Comment(models.Model): #! !댓글, !작성일, !수정일, !삭제일, !삭제여부
+    user = models.ForeignKey(User,on_delete=models.CASCADE, related_name= 'user_comment')
+    post = models.ForeignKey(Post,on_delete=models.CASCADE, related_name= 'post_comment')
     contents = models.TextField(verbose_name = '내용') #내용
     created = models.DateTimeField(auto_now_add=True) #작성일
     modify_date = models.DateTimeField(null = True, blank = True) #댓글 수정일
@@ -127,20 +137,15 @@ class Comment(models.Model): #! !댓글, !작성일, !수정일, !삭제일, !�
         return self.contents
 
 
-
-
-
-
 class PostLike(models.Model):
-    post = models.ForeignKey(Post, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name= 'post_like')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name= 'user_like')
     created_date = models.DateTimeField(auto_now_add=True,)
-
+    cancel_date = models.DateTimeField(null = True, blank = True)
 
 
 class Scrap(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name= 'post_scrap')
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name= 'user_scrap')
-
+    user = models.ForeignKey(UserData, on_delete=models.CASCADE, related_name= 'user_scrap')
     created_date = models.DateTimeField(auto_now_add=True,)
+    cancel_date = models.DateTimeField(null = True, blank = True)

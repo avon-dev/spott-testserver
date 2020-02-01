@@ -46,3 +46,55 @@ class PostSerializer(serializers.ModelSerializer):
         model = Post
         fields = ('id' ,'posts_image', 'latitude', 'longitude',)
         # read_only_fields = ('created_at',)
+
+
+class PostAllSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Post
+        fields = ('__all__')
+        # read_only_fields = ('created_at',)
+
+
+
+##############################################
+
+class UserProfile(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('nickname','profile_image',)
+
+class HashTagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HashTag
+        fields = ('tag_name',)
+
+class PostDetailSerializer(serializers.ModelSerializer):
+    user = UserProfile(read_only=True)
+    hashtag = HashTagSerializer(read_only=True,many=True)
+    class Meta:
+        model = Post
+        # fields = ('user',)
+        exclude = ('modify_date','delete_date','is_active','problem','report_date','report')
+#################################################
+
+
+
+##############################################
+
+
+class MyUserSerializer(serializers.ModelSerializer):
+    # user = UserProfile(read_only=True)
+    class Meta:
+        model = User
+        # fields=('__all__')
+        fields = ('nickname','profile_image',)
+        # exclude = ('modify_date','delete_date','is_active','problem','report_date','report')
+
+class MypageSerializer(serializers.ModelSerializer):
+    # user = UserProfile(read_only=True)
+    class Meta:
+        model = Post
+        # fields=('__all__')
+        fields = ('id','posts_image','latitude','longitude',)
+        # exclude = ('modify_date','delete_date','is_active','problem','report_date','report')
+#################################################

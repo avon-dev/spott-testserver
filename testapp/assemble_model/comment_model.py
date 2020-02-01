@@ -1,4 +1,4 @@
-from . import init_models
+from testapp.assemble_model.post_model import *
 
 
 class Comment(models.Model): #! !댓글, !작성일, !수정일, !삭제일, !삭제여부

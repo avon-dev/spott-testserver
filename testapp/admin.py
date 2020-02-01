@@ -8,7 +8,7 @@ class UserAdmin(admin.ModelAdmin):
 
 admin.site.register(User, UserAdmin)
 admin.site.register(Post)
-admin.site.register(Hashtag)
+admin.site.register(HashTag)
 admin.site.register(Comment)
 admin.site.register(PostLike)
 admin.site.register(Scrap)
