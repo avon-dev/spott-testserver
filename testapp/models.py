@@ -39,7 +39,7 @@ class User(AbstractBaseUser, PermissionsMixin): #나중에 널 값 처리
     is_staff = models.BooleanField(_('is staff'), default = False)
 
     objects = UserManager()
-
+    USEREMAIL_FIELD = 'email'
     USERNAME_FIELD = 'user_uid'
     REQUIRED_FIELDS = []
 
@@ -107,6 +107,7 @@ class Post(models.Model): #!내용(conents), !작성일, !수정일, !공개여�
     hashtag = models.ManyToManyField('User', through='HashTag',related_name='get_hashtag')
     like_user = models.ManyToManyField('User', through = 'PostLike',related_name= 'get_like')
     comment = models.ManyToManyField('User', through='Comment',related_name='get_comment')
+    #좋아요가 1000개 이상 넘어가면 카운트로 조회
     def __str__(self):
         return self.contents
 
@@ -124,8 +125,8 @@ class HashTag(models.Model): #! !댓글, !작성일, !수정일, !삭제일, !�
 
 
 class Comment(models.Model): #! !댓글, !작성일, !수정일, !삭제일, !삭제여부
-    user = models.ForeignKey(User,on_delete=models.CASCADE, related_name= 'user_comment')
-    post = models.ForeignKey(Post,on_delete=models.CASCADE, related_name= 'post_comment')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name= 'user_comment')
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name= 'post_comment')
     contents = models.TextField(verbose_name = '내용') #내용
     created = models.DateTimeField(auto_now_add=True) #작성일
     modify_date = models.DateTimeField(null = True, blank = True) #댓글 수정일

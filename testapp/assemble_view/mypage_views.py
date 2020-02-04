@@ -3,6 +3,9 @@ from testapp.assemble_view.__init__ import *
 
 from random import *
 
+
+
+
 class MypageViewSet(APIView):
     permission_classes = []
 
@@ -10,7 +13,7 @@ class MypageViewSet(APIView):
     def get(self, request, format=None):
 
         user = User.objects.get(id=3)
-        post = Post.objects.filter(user=user)
+        post = Post.objects.filter(user=user).order_by('-id')
 
         post_serializers = MypageSerializer(post,many=True)
         user_serializers = MyUserSerializer(user)
