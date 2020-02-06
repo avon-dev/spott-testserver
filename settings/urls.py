@@ -27,7 +27,6 @@ from simplejwt.rest_framework_simplejwt import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('spott/tokena', views.TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('spott/token', views.TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('spott/token/refresh', views.TokenRefreshView.as_view(), name='token_refresh'),
     path('spott/token/verify', views.TokenVerifyView.as_view(), name='token_verify'),

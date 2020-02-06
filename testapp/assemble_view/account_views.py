@@ -103,7 +103,7 @@ class UserCreate(APIView):
 
             #레코드 생성
             user = User.objects.create(email = request_data["email"]\
-            , user_uid = request_data["user_uid"]\
+            , user_uid = request_data["email"]\
             , password = request_data["password"]\
             , nickname = request_data["nickname"])
             # user.user_uid = make_password(request_data["user_uid"])
@@ -125,7 +125,7 @@ class Login(APIView):
         # post_list = UserSerializer(posts, many=True)
         string = request.headers["Authorization"]
         decodedPayload = jwt.decode(string[4:],None,None)
-        user = User.objects.get(id = decodedPayload["user_id"])
+        user = User.objects.get(user_uid = decodedPayload["id"])
         user.is_login = True
         user.last_login = datetime.datetime.now()
         user.save()

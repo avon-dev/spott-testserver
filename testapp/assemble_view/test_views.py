@@ -4,10 +4,10 @@ from testapp.assemble_view.__init__ import *
 class Test(APIView):
     permission_classes = []
     def post(self, request, format=None):
-        repl = Return_Module.ReturnPattern.string_to_dict(request.data)
-        repl['nickname'] = "asdasd"
+        # repl = Return_Module.ReturnPattern.string_to_dict(request.data)
+        # repl['nickname'] = "asdasd"
         # asd = repl['nickname']
-        result = Return_Module.ReturnPattern.success_text("Create success",**repl)
+        # result = Return_Module.ReturnPattern.success_text("Create success",**repl)
         # bb = repl.replace("'",'"')
         # json = json.loads(repl)
         # json = json.loads(aa)
@@ -18,7 +18,10 @@ class Test(APIView):
         # asd = json.dumps(request.data.dict())
         # serializer = TestSerializer(asd)
         # aa = request.data['sending']
-        return Response(str(result))
+        for count in range(2,12):
+            user = User.objects.get(id = count)
+            user_data = UserData.objects.create(user=user)
+        return Response("success")
 
 
 class Test2(APIView):

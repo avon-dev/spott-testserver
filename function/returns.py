@@ -58,8 +58,8 @@ class ReturnPattern:
 
     def success_text(message,**dict):
         success = {"payload":dict,"message":message}
-
-        return str(success)
+        result = json.dumps(success)
+        return result
 
 
 

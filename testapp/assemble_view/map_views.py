@@ -1,7 +1,7 @@
 from .__init__ import *
 
 class Posts(APIView):
-    permission_classes = []
+    permission_classes = (IsAuthenticated,)
     def get(self, request, format=None):
         data = Return_Module.string_to_dict(request.GET)
         lat_ne = data['lat_ne']

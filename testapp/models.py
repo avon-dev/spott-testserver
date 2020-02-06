@@ -37,7 +37,6 @@ class User(AbstractBaseUser, PermissionsMixin): #나중에 널 값 처리
     modify_date = models.DateTimeField(null = True, blank = True)
     delete_date = models.DateTimeField(null = True, blank = True)
     is_staff = models.BooleanField(_('is staff'), default = False)
-
     objects = UserManager()
     USEREMAIL_FIELD = 'email'
     USERNAME_FIELD = 'user_uid'
@@ -107,13 +106,15 @@ class Post(models.Model): #!내용(conents), !작성일, !수정일, !공개여�
     hashtag = models.ManyToManyField('User', through='HashTag',related_name='get_hashtag')
     like_user = models.ManyToManyField('User', through = 'PostLike',related_name= 'get_like')
     comment = models.ManyToManyField('User', through='Comment',related_name='get_comment')
+    scrap_users = models.ManyToManyField('User', through = 'Scrapt',related_name= 'get_scrap')
     #좋아요가 1000개 이상 넘어가면 카운트로 조회
     def __str__(self):
-        return self.contents
+        return str(self.id)
 
-class UserData(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE,related_name= 'user_data')
-    scrap_users = models.ManyToManyField('Post', through = 'Scrap',related_name= 'get_scrap')
+# class UserData(models.Model):
+#     user = models.OneToOneField(User, on_delete=models.CASCADE,related_name= 'user_data')
+#     scrap_users = models.ManyToManyField('Post', through = 'Scrap',related_name= 'get_scrap')
+#     objects = UserManager()
 
 
 class HashTag(models.Model): #! !댓글, !작성일, !수정일, !삭제일, !삭제여부
@@ -122,6 +123,9 @@ class HashTag(models.Model): #! !댓글, !작성일, !수정일, !삭제일, !�
     tag_name = models.CharField(max_length=250,verbose_name = '태그명') #태그
     created = models.DateTimeField(auto_now_add=True) #작성일
     delete_date = models.DateTimeField(null = True, blank = True)
+
+    def __str__(self):
+        return self.tag_name
 
 
 class Comment(models.Model): #! !댓글, !작성일, !수정일, !삭제일, !삭제여부
@@ -144,9 +148,19 @@ class PostLike(models.Model):
     created_date = models.DateTimeField(auto_now_add=True,)
     cancel_date = models.DateTimeField(null = True, blank = True)
 
+    def __str__(self):
+        return str(self.post.id)
 
-class Scrap(models.Model):
+
+class Scrapt(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name= 'post_scrap')
-    user = models.ForeignKey(UserData, on_delete=models.CASCADE, related_name= 'user_scrap')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name= 'user_scrap')
     created_date = models.DateTimeField(auto_now_add=True,)
     cancel_date = models.DateTimeField(null = True, blank = True)
+
+
+    class Meta:
+        ordering = ('-created_date',)
+
+    # def __str__(self):
+    #     return self.user

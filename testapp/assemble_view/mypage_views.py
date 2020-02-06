@@ -7,12 +7,13 @@ from random import *
 
 
 class MypageViewSet(APIView):
-    permission_classes = []
 
+    permission_classes = (IsAuthenticated,)
 
     def get(self, request, format=None):
-
-        user = User.objects.get(id=3)
+        string = request.headers["Authorization"]
+        decodedPayload = jwt.decode(string[4:],None,None)
+        user = User.objects.get(user_uid = decodedPayload["id"])
         post = Post.objects.filter(user=user).order_by('-id')
 
         post_serializers = MypageSerializer(post,many=True)

@@ -98,3 +98,35 @@ class MypageSerializer(serializers.ModelSerializer):
         fields = ('id','posts_image','latitude','longitude',)
         # exclude = ('modify_date','delete_date','is_active','problem','report_date','report')
 #################################################
+
+
+
+
+class LikeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PostLike
+        fields = ('__all__')
+        # read_only_fields = ('created_at',)
+
+
+
+class ScrapPostSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Post
+        fields = ('id','posts_image','back_image')
+        # read_only_fields = ('created_at',)
+
+class ScrapAllSerializer(serializers.ModelSerializer):
+    hashtag = ScrapPostSerializer(read_only=True,many=True)
+    class Meta:
+        model = Post
+        fields = ('__all__')
+        # exclude = ('__all__')
+
+
+class ScrapSerializer(serializers.ModelSerializer):
+    post = ScrapPostSerializer(read_only=True)
+    class Meta:
+        model = Scrapt
+        fields = ('post',)
+#################################################

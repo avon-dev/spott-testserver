@@ -8,29 +8,51 @@ from rest_framework import viewsets
 from random import *
 
 class PostViewSet(viewsets.ViewSet):
-    permission_classes = []
+    permission_classes = (IsAuthenticated,)
 
 
     def retrieve(self, request, pk=None):
-        queryset = Post.objects.all()
+        string = request.headers["Authorization"]
+        decodedPayload = jwt.decode(string[4:],None,None)
         posts = Post.objects.get(pk=pk)
         serializers = PostDetailSerializer(posts)
-        # user = User.objects.get(id=3).get_user.all()
-        # user.post_set.all()
+        user = User.objects.get(user_uid = decodedPayload["id"])
+
         comment_count = len(serializers.data['comment'])
-        # dict = {"payload":
-        # result = Return_Module.ReturnPattern.success_text("Send success",result=True,code=random_number)
+
+        try:
+            like = PostLike.objects.get(post = posts, user = user)
+        # success
+        except PostLike.DoesNotExist:
+            like_checked = False
+        else:
+            like_checked = True
+
+        try:
+            scrap = Scrapt.objects.get(post = posts, user = user)
+        # success
+        except Scrapt.DoesNotExist:
+            scrap_checked = False
+        else:
+            scrap_checked = True
+
         serial_dumps = Return_Module.jsonDumpsLoads(self,**serializers.data)
         serial_dumps['comment'] = comment_count
+        serial_dumps['count'] = len(serializers.data['like_user'])
+        serial_dumps['like_checked'] = like_checked
+        serial_dumps['scrap_checked'] = scrap_checked
         dict = {"payload":serial_dumps,"message":"okok"}
         result = json.dumps(dict)
+        #해시태그, 좋아요, 스크랩
         return Response(result)
 
+
     def create(self, request):
-        id = randint(2,11)
+        string = request.headers["Authorization"]
+        decodedPayload = jwt.decode(string[4:],None,None)
         request_data = Return_Module.multi_string_to_dict(request.data)
         # testdd = test.objects.create(latitude = request_data["latitude"] ,testfield = request_data["testfield"], photo = request.FILES["photo"], photo2 = request.FILES["photo2"], dummy = request_data["dummy"])
-        user = User.objects.get(id=id)
+        user = User.objects.get(user_uid=decodedPayload["id"])
         posts = Post.objects.create(user = user,\
         latitude = request_data["latitude"],\
         longitude = request_data["longitude"],\
