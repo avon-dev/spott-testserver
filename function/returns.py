@@ -61,6 +61,11 @@ class ReturnPattern:
         result = json.dumps(success)
         return result
 
+    def success_list_text(message,*list):
+        success = {"payload":list,"message":message}
+        result = json.dumps(success)
+        return result
+
 
 
 def string_to_dict(request):

@@ -69,6 +69,12 @@ class EmailAuthentication(APIView):
 ##############################
 ###########회원가입############
 ##############################
+
+
+
+
+
+
 class UserCreate(APIView):
     permission_classes = []
     def post(self, request, format=None):

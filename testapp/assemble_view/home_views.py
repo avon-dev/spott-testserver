@@ -26,7 +26,7 @@ class Home(APIView):
 
         pageable = False if posts_obj_cached.count() < 21 else True
 
-        created_time = posts_obj_cached[0].created if craeted_time == "" else craeted_time
+        created_time = str(posts_obj_cached[0].created) if craeted_time == "" else craeted_time
         home_serializers = HomeSerializer(posts_obj_cached[0:20],many=True)
 
         dict = {"payload":{"items":home_serializers.data, "created_time":created_time, "pageable":pageable}}

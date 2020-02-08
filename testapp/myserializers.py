@@ -13,6 +13,12 @@ class UserCreateSerializer(serializers.ModelSerializer):
         #     user.save()
         #     return user
 
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('__all__')
+
+
 
 class HomeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -55,13 +61,17 @@ class PostAllSerializer(serializers.ModelSerializer):
         # read_only_fields = ('created_at',)
 
 
-
+class PostsContentsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Post
+        fields = ('contents',)
+        # read_only_fields = ('created_at',)
 ##############################################
 
 class UserProfile(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('nickname','profile_image',)
+        fields = ('user_uid','nickname','profile_image',)
 
 class HashTagSerializer(serializers.ModelSerializer):
     class Meta:
@@ -130,3 +140,20 @@ class ScrapSerializer(serializers.ModelSerializer):
         model = Scrapt
         fields = ('post',)
 #################################################
+
+
+class MyUserCommentSerializer(serializers.ModelSerializer):
+    # user = UserProfile(read_only=True)
+    class Meta:
+        model = User
+        # fields=('__all__')
+        fields = ('nickname','profile_image','user_uid')
+        # exclude = ('modify_date','delete_date','is_active','problem','report_date','report')
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    user = MyUserCommentSerializer(read_only=True)
+    class Meta:
+        model = Comment
+        # fields = ('__all__')
+        exclude = ('is_active','delete_date','post','modify_date')

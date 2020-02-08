@@ -36,11 +36,17 @@ class PostViewSet(viewsets.ViewSet):
         else:
             scrap_checked = True
 
+        if serializers.data['user']['user_uid'] == decodedPayload["id"]:
+            myself = True
+        else:
+            myself = False
+
         serial_dumps = Return_Module.jsonDumpsLoads(self,**serializers.data)
         serial_dumps['comment'] = comment_count
         serial_dumps['count'] = len(serializers.data['like_user'])
         serial_dumps['like_checked'] = like_checked
         serial_dumps['scrap_checked'] = scrap_checked
+        serial_dumps['myself'] = myself
         dict = {"payload":serial_dumps,"message":"okok"}
         result = json.dumps(dict)
         #해시태그, 좋아요, 스크랩
@@ -70,6 +76,37 @@ class PostViewSet(viewsets.ViewSet):
         # file = request.FILES['back_image'].content_type = 'image/jpeg'
         return Response("success", status=status.HTTP_201_CREATED)
 
+
+
+#
+    def partial_update(self, request, pk=None):
+        request_data = Return_Module.string_to_dict(request.data)
+
+        string = request.headers["Authorization"]
+        decodedPayload = jwt.decode(string[4:],None,None)
+        user = User.objects.get(user_uid = decodedPayload["id"])
+        posts = Post.objects.get(pk=pk, user_id=user.id)
+        serializers = PostsContentsSerializer(posts, data = request_data, partial=True)
+        if serializers.is_valid():
+            serializers.save()
+            return Response(serializers.data, status=status.HTTP_201_CREATED)
+        return Response(serializers.data, status=status.HTTP_200_CREATED)
+
+
+
+
+    def destroy(self, request, pk=None):
+        string = request.headers["Authorization"]
+        decodedPayload = jwt.decode(string[4:],None,None)
+
+        try:
+            user = User.objects.get(user_uid = decodedPayload["id"])
+            posts = Post.objects.get(pk=pk, user_id=user.id)
+        except ObjectDoesNotExist:
+            return Response("실패")
+        else:
+            posts.delete()
+            return Response("성공")
 
     # def create(self, request):
     #

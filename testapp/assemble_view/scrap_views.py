@@ -85,8 +85,8 @@ class MultiScrap(APIView):
         for num in range(0,len(ids)):
             ids[num]=int(ids[num])
 
-        post = Post.objects.filter(pk__in = ids).delete() #해당 포스트 가져오기
-        dict = {"payload":post,"message":"success"}
+        scrap = Scrapt.objects.filter(post_id__in = ids).delete() #해당 포스트 가져오기
+        dict = {"payload":scrap,"message":"success"}
         result = json.dumps(dict)
         return Response(result)
 
