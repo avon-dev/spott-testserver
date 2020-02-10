@@ -21,12 +21,14 @@ router.register('posts', posts_views.PostViewSet, basename='posts')
 # router.register('comments', comment_views.CommentViewSet, basename='comments')
 
 urlpatterns = [
+    path('email-authen', account_views.EmailAuthentication.as_view()), #이메일 인증
+    path('account', account_views.AccountView.as_view()), #account로 바꾸기
+
     path('login', account_views.Login.as_view(), name='user'),
     path('', include(router.urls)),
     path('mypage', mypage_views.MypageViewSet.as_view()),
-    path('user', account_views.UserCreate.as_view()), #account로 바꾸기
+
     path('users', user_views.UserView.as_view()),
-    path('email-authen', account_views.EmailAuthentication.as_view()),
     path('map/posts', map_views.Posts.as_view()),
     path('home/posts', home_views.Home.as_view()),
     path('like/<int:pk>', posts_like_views.Like.as_view()),

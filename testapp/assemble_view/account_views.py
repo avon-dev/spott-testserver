@@ -7,38 +7,36 @@ from django.contrib.auth.hashers import make_password, is_password_usable, check
 ##############################
 class EmailAuthentication(APIView):
     permission_classes = []
+    request_bundle = "sending"
     def get(self, request, format=None):
         feild_name = "email"
         random_number = ""
 
-        # 에러 처리부분 성공 조건이 아니면 함수 리턴
-        if not request_bundle in request.GET.keys():
-            dict = Error_Module.ErrorHandling.none_bundle()
-            result = Return_Module.ReturnPattern.error_text(**dict)
-            return Response(result,status = status.HTTP_404_NOT_FOUND)
+        # sending으로 안 묶여 있으면 에러 처리
+        try:
+            request_data = Return_Module.string_to_dict(request.GET) #sending 파라미터에서 value 추출해서 dict 형태로 변형
+        except KeyError as e:
+            print(f"key error: missing key name {e}") #에러 로그
+            result = Error_Module.ErrorHandling.none_bundle(request_bundle) #클라이언트에 보낼 에러 메시지
+            return Response(result,status = status.HTTP_400_BAD_REQUEST)
 
-        #sending 파라미터에서 value 추출해서 dict 형태로 변형
-        request_data = Return_Module.string_to_dict(request.GET)
 
         #필드에 이메일이 없을 경우
-        if not feild_name in request_data.keys():
+        try:
+            email = request_data["email"]
+        except KeyError as e:
             dict = Error_Module.ErrorHandling.none_feild(feild_name,**request.GET.dict())
             result = Return_Module.ReturnPattern.error_text(**dict)
-            return Response(result,status = status.HTTP_404_NOT_FOUND)
-
-        #이메일 필드의 형식이 이메일이 아닐경우
-        elif Email_Module.is_valid(request_data["email"]):
-            dict = {feild_name:"Not an email pattern"}
-            result = Return_Module.ReturnPattern.error_text(**dict)
-            return Response(result,status = status.HTTP_404_NOT_FOUND)
-
-        #데이터베이스 User 테이블에서 동일한 이메일이 있는지 검색
-        # user = User.objects.get(email=request_data['email'])
-        #
-        #     random_number = ran.RanStrCraete.number(4) #4자리 난수 생성
+            return Response(result,status = status.HTTP_400_BAD_REQUEST)
+        else:
+            #이메일 패턴이 아닐경우 오류 반환
+            if Email_Module.is_valid(email):
+                dict = {feild_name:"Not an email pattern"}
+                result = Return_Module.ReturnPattern.error_text(**dict)
+                return Response(result,status = status.HTTP_400_BAD_REQUEST)
 
         try:
-            user = User.objects.get(email=request_data['email'])
+            user = User.objects.get(email=email)
         except ObjectDoesNotExist:
             random_number = ran.RanStrCraete.number(4) #4자리 수의 랜덤 숫자 생성
 
@@ -48,7 +46,7 @@ class EmailAuthentication(APIView):
             email = EmailMessage(subject,message,to=[user_email])
 
             result = Return_Module.ReturnPattern.success_text\
-            ("Send success",result=True,code=random_number)
+            ("Send success", duplication=False,code=random_number)
 
 
             if email.send() == 1: #이메일 보내기 성공시
@@ -58,7 +56,7 @@ class EmailAuthentication(APIView):
         else:
 
             result = Return_Module.ReturnPattern.success_text\
-            ("Duplicate email",result=False, code=random_number)
+            ("Duplicate email", duplication=True, code=random_number)
             return Response(result)
 
 
@@ -75,19 +73,20 @@ class EmailAuthentication(APIView):
 
 
 
-class UserCreate(APIView):
+class AccountView(APIView):
     permission_classes = []
     def post(self, request, format=None):
 
         parameter_list = ["email", "password", "nickname"]
 
         # 에러 처리부분 성공 조건이 아니면 함수 리턴
-        if not request_bundle in request.data.keys():
-            dict = Error_Module.ErrorHandling.none_bundle()
-            result = Return_Module.ReturnPattern.error_text(**dict)
-            return Response(result,status = status.HTTP_404_NOT_FOUND)
-
-        request_data = Return_Module.string_to_dict(request.data)
+        # sending으로 안 묶여 있으면 에러 처리
+        try:
+            request_data = Return_Module.string_to_dict(request.data) #sending 파라미터에서 value 추출해서 dict 형태로 변형
+        except KeyError as e:
+            print(f"key error: missing key name {e}") #에러 로그
+            result = Error_Module.ErrorHandling.none_bundle(request_bundle) #클라이언트에 보낼 에러 메시지
+            return Response(result,status = status.HTTP_400_BAD_REQUEST)
 
         for required in parameter_list: #필수 필드가 포함이 되어 있는지 확인
             if not required in request_data.keys():
@@ -95,19 +94,10 @@ class UserCreate(APIView):
                 result = Return_Module.ReturnPattern.error_text(**dict)
                 return Response(result,status = status.HTTP_404_NOT_FOUND)
 
-        user = User.objects.filter(nickname=request_data['nickname'])
-
-
-
-        if user: #유저의 닉네임이 중복이 되는지 검사
-            result = Return_Module.ReturnPattern.success_text\
-            (result=False, message="Duplicate nickname")
-            return Response(result)
-
-        serializer = UserCreateSerializer(data=request_data)
-        if serializer.is_valid():
-
-            #레코드 생성
+        try:
+            nickname_check = User.objects.get(nickname=request_data['nickname'])
+        except ObjectDoesNotExist as e:
+                #레코드 생성
             user = User.objects.create(email = request_data["email"]\
             , user_uid = request_data["email"]\
             , password = request_data["password"]\
@@ -116,10 +106,16 @@ class UserCreate(APIView):
             user.set_password(request_data["password"])
             user.save()
 
-            result = Return_Module.ReturnPattern.success_text("Create success",result=True)
-            return Response("success", status= status.HTTP_201_CREATED)
+            result = Return_Module.ReturnPattern.success_text("Create success",sign_up=True)
+            return Response(result, status= status.HTTP_201_CREATED)
+
         else:
-            return Response("failed", status= status.HTTP_404_NOT_FOUND)
+            result = Return_Module.ReturnPattern.success_text\
+            (duplication=True, message="Duplicate nickname")
+            return Response(result, status = status.HTTP_200_OK)
+
+
+
 
 ##############################
 ###########Legacy############

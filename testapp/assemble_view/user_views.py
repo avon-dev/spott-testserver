@@ -1,7 +1,7 @@
 from testapp.assemble_view.__init__ import *
 
-
-class UserView(APIView):
+from .base_views import BaseAPIView
+class UserView(BaseAPIView):
 
 
 
@@ -11,6 +11,7 @@ class UserView(APIView):
     #로그아웃 로그아웃을 하게 되면 토큰 블랙리스트에 추가
     permission_classes = (IsAuthenticated,)
     def get (self, request, format=None):
+        # super().get(request)
         string = request.headers["Authorization"]
         decodedPayload = jwt.decode(string[4:],None,None)
         user = User.objects.get(user_uid = decodedPayload["id"])

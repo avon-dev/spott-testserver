@@ -1,5 +1,6 @@
-
-
+from rest_framework.response import Response
+from rest_framework import status
+from .returns import ReturnPattern
 
 class ErrorHandling:
 
@@ -10,9 +11,9 @@ class ErrorHandling:
                 dict[key] = "%s field is required" %key
         return dict
 
-    def none_bundle():
+    def none_bundle(bundle_name):
         dict = {}
-        bundle_name = "'sending'"
         message = "message"
-        dict[message] = "Send it in a bundle name %s" %bundle_name
-        return dict
+        dict[message] = "Send it in a bundle name '%s'" %bundle_name
+
+        return ReturnPattern.error_text(**dict)

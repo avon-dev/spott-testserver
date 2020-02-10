@@ -53,8 +53,8 @@ class ReturnPattern:
 
     def error_text(**dict):
         error = {"error":dict}
-
-        return str(error)
+        result = json.dumps(error)
+        return result
 
     def success_text(message,**dict):
         success = {"payload":dict,"message":message}
@@ -70,9 +70,12 @@ class ReturnPattern:
 
 def string_to_dict(request):
     re_string = request["sending"]
-    result = json.loads(re_string)
-
-    return result
+    try:
+        result = json.loads(re_string)
+        return result
+    except json.JSONDecodeError as e:
+        print(f"error: JSONDecodeError {e}")
+        return {}
 
 
 def multi_string_to_dict(request):
