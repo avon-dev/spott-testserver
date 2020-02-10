@@ -1,8 +1,4 @@
-from . import init_models
-from . import hashtag_model
-from . import user_model
-from . import postlike_model
-from . import scrap_model
+from testapp.assemble_model.hashtag_model import *
 
 
 

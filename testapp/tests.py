@@ -1,32 +1,110 @@
 from django.test import TestCase
-# import sys
-# sys.path.append("../")
-# from function import errors
-# from rest_framework.views import APIView
-# from rest_framework.response import Response
-# from rest_framework import status
-# # Create your tests here.
-# class EmailAuthentication(APIView):
+from .models import *
+from testapp.assemble_view import *
+from rest_framework.test import APIRequestFactory
+from django.urls import reverse
+from rest_framework import status
+from rest_framework.test import APITestCase
+# Create your tests here.
+from .myserializers import *
+
+
+
+class HomeTest(TestCase):
+    fixtures = ['testapp/fixtures/db-data.json']
+
+    def test_success_return_200(self):
+        print("test_success_return_200")
+        response = self.client.get('/spott/posts/home?sending={"page" : 10, "created_time" : "2020-01-15T12:20:34.321288Z"}')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
+
+#     def test_required_bad_value_return_400(self):
+#         print("test_required_bad_value_return_400")
+#         response = self.client.get('/products?skin_type=bad_value')
+#         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 #
-#     def get(self, request, format=None):
+#     def test_required_params_return_200(self):
+#         print("test_required_params_return_200")
+#         list = ['dry','oily','sensitive']
+#         for skin_type in list:
+#             response = self.client.get(f'/products?skin_type=dry&category={skin_type}')
+#             self.assertEqual(response.status_code, status.HTTP_200_OK)
 #
-#         if not 'email' in request.GET.keys(): #필드에 이메일이 없을 경우
-#             return Response({"error":"Email field is required"},status = status.HTTP_404_NOT_FOUND)
-#         ######################난수 생성
-#         elif Email_Module.is_valid(request.GET["email"]): #이메일 필드의 형식이 이메일이 아닐경우
-#             return Response({"error":"Not an email pattern"},status = status.HTTP_404_NOT_FOUND)
+#     def test_params_category_return_200(self):
+#         print("test_params_category_return_200")
+#         list = ['basemakeup','maskpack','skincare','suncare']
+#         for category in list:
+#             response = self.client.get(f'/products?skin_type=dry&category={category}')
+#             self.assertEqual(response.status_code, status.HTTP_200_OK)
 #
-#         random_number = randomes.RanStrCraete.number(4) #4자리 난수 생성
+#     def test_params_page_return_200(self):
+#         print("test_params_page_return_200")
+#         for page in range(1,100):
+#             response = self.client.get(f'/products?skin_type=dry&page={page}')
+#             self.assertEqual(response.status_code, status.HTTP_200_OK)
 #
-#         subject = '서버에서 발송된 이메일'
-#         message = '인증코드: '+ random_number
-#         user_email = request.GET["email"]
+#     def test_params_exclude_ingredient_return_200(self):
+#         print("test_params_exclude_ingredient_return_200")
+#         ingredient_obj = Ingredient.objects.all()
+#         serializers = IngredientSerializer(ingredient_obj, many=True)
+#         for ingredient in serializers.data:
+#             response = self.client.get('/products?skin_type=dry&exclude_ingredient=%s' %ingredient['name'])
+#             self.assertEqual(response.status_code, status.HTTP_200_OK)
 #
-#         email = EmailMessage(subject,message,to=[user_email])
+#     def test_params_include_ingredient_return_200(self):
+#         print("test_params_include_ingredient_return_200")
+#         ingredient_obj = Ingredient.objects.all()
+#         serializers = IngredientSerializer(ingredient_obj, many=True)
+#         for ingredient in serializers.data:
+#             response = self.client.get('/products?skin_type=dry&include_ingredient=%s' %ingredient['name'])
+#             self.assertEqual(response.status_code, status.HTTP_200_OK)
 #
-#         code = '{"payload": {"code":\"%s\"}}'%random_number # 이스케이프 방법이랑 포맷팅 방법 때문에 조금 해맴
-#         code_dict = json.loads(code)
-#         if email.send() == 1:
-#             return Response(code_dict)
-#         else:
-#             return Response({"error":"Email failed to send"})
+#
+#
+#
+# class ProductDetailTest(TestCase):
+#     fixtures = ['myapp/item/fixtures/app-data.json']
+#
+#     def test_bad_pk_return_404(self):
+#         print("test_bad_pk_return_404")
+#         list = ["", "as", "한글"]
+#         for pk in list:
+#             response = self.client.get(f'/product/{pk}')
+#             self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+#
+#     def test_range_over_pk_return_404(self):
+#         print("test_range_over_pk_return_404")
+#         response = self.client.get('/product/1001')
+#         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+#
+#     def test_required_empty_key_return_404(self):
+#         print("test_required_empty_key_return_404")
+#         response = self.client.get('/product/1')
+#         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+#
+#     def test_required_bad_value_return_404(self):
+#         print("test_required_bad_value_return_404")
+#         response = self.client.get('/product/1?skin_type=bad_value')
+#         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+#
+#     def test_required_params_return_200(self):
+#         print("test_required_params_return_200")
+#         list = ['dry','oily','sensitive']
+#         for skin_type in list:
+#             response = self.client.get(f'/product/1?skin_type={skin_type}')
+#             self.assertEqual(response.status_code, status.HTTP_200_OK)
+#
+#     def test_range_in_pk_return_404(self):
+#         print("test_range_in_pk_return_404")
+#         for pk in range(1,1000):
+#             response = self.client.get(f'/product/{pk}?skin_type=dry')
+#             self.assertEqual(response.status_code, status.HTTP_200_OK)
+#
+#     def test_required_success_return_200(self):
+#         print("test_required_success_return_200")
+#         list = ['dry','oily','sensitive']
+#         for skin_type in list:
+#             response = self.client.get(f'/product/1?skin_type={skin_type}')
+#             self.assertEqual(response.status_code, status.HTTP_200_OK)

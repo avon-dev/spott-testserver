@@ -7,8 +7,9 @@ class UserAdmin(admin.ModelAdmin):
     list_display = ['user_uid', 'date_joined', 'last_login', 'is_staff']
 
 admin.site.register(User, UserAdmin)
+# admin.site.register(UserData)
 admin.site.register(Post)
-admin.site.register(Hashtag)
+admin.site.register(HashTag)
 admin.site.register(Comment)
 admin.site.register(PostLike)
-admin.site.register(Scrap)
+admin.site.register(Scrapt)

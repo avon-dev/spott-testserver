@@ -16,8 +16,10 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 # from rest_framework_jwt.views import obtain_jwt_token, verify_jwt_token, refresh_jwt_token #JWT 인증을 위해 필요한 요소를 불러온다
-from rest_framework_simplejwt import views as jwt_views
+# from rest_framework_simplejwt import views as jwt_views
 from django.conf import settings
+# from testapp.assemble_view import token
+from simplejwt.rest_framework_simplejwt import views
 # from rest_framework_simplejwt.views import (
 #     TokenObtainSlidingView,
 #     TokenRefreshSlidingView,
@@ -25,9 +27,9 @@ from django.conf import settings
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('spott/token', jwt_views.TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('spott/token/refresh', jwt_views.TokenRefreshView.as_view(), name='token_refresh'),
-    path('spott/token/verify', jwt_views.TokenVerifyView.as_view(), name='token_verify'),
+    path('spott/token', views.TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('spott/token/refresh', views.TokenRefreshView.as_view(), name='token_refresh'),
+    path('spott/token/verify', views.TokenVerifyView.as_view(), name='token_verify'),
     # path('api/token/', TokenObtainSlidingView.as_view(), name='token_obtain'),
     # path('api/token/refresh/', TokenRefreshSlidingView.as_view(), name='token_refresh'),
     path('spott/', include('testapp.urls'))
