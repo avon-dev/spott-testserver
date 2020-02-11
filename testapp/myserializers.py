@@ -71,16 +71,16 @@ class PostsContentsSerializer(serializers.ModelSerializer):
 class UserProfile(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('user_uid','nickname','profile_image',)
+        fields = ('id','user_uid','nickname','profile_image',)
 
 class HashTagSerializer(serializers.ModelSerializer):
     class Meta:
         model = HashTag
-        fields = ('tag_name',)
+        fields = ('__all__')
 
 class PostDetailSerializer(serializers.ModelSerializer):
     user = UserProfile(read_only=True)
-    hashtag = HashTagSerializer(read_only=True,many=True)
+    # hashtag = HashTagSerializer(read_only=True,many=True)
     class Meta:
         model = Post
         # fields = ('user',)
@@ -147,7 +147,7 @@ class MyUserCommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         # fields=('__all__')
-        fields = ('nickname','profile_image','user_uid')
+        fields = ('id','nickname','profile_image','user_uid')
         # exclude = ('modify_date','delete_date','is_active','problem','report_date','report')
 
 
@@ -157,3 +157,25 @@ class CommentSerializer(serializers.ModelSerializer):
         model = Comment
         # fields = ('__all__')
         exclude = ('is_active','delete_date','post','modify_date')
+
+
+
+class SearchNameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        # fields = ('__all__')
+        fields = ('nickname',)
+
+
+class SearchTagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HashTag
+        # fields = ('__all__')
+        fields = ('tag_name',)
+
+
+class TagListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HashTag
+        # fields = ('__all__')
+        fields = ('post_id',)

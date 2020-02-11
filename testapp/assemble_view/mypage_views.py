@@ -21,6 +21,25 @@ class MypageViewSet(APIView):
 
         # result = Return_Module.ReturnPattern.success_text("Send success",result=True,code=random_number)
 
-        dict = {"payload":{"user":user_serializers.data,"posts":post_serializers.data},"message":"okok"}
+        dict = {"payload":{"user":user_serializers.data,"posts":post_serializers.data},"message":"success"}
+        result = json.dumps(dict)
+        return Response(result)
+
+
+class UserMypageViewSet(APIView):
+
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, pk, format=None):
+
+        user = User.objects.get(pk = pk)
+        post = Post.objects.filter(user=user).order_by('-id')
+
+        post_serializers = MypageSerializer(post,many=True)
+        user_serializers = MyUserSerializer(user)
+
+        # result = Return_Module.ReturnPattern.success_text("Send success",result=True,code=random_number)
+
+        dict = {"payload":{"user":user_serializers.data,"posts":post_serializers.data},"message":"success"}
         result = json.dumps(dict)
         return Response(result)

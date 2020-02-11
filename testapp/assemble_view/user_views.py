@@ -20,7 +20,7 @@ class UserView(BaseAPIView):
         return Response(result)
 
     def patch (self, request, format=None):
-        request_data = Return_Module.string_to_dict(request.data)
+        request_data = Return_Module.multi_string_to_dict(request.data)
         is_key = False
 
         string = request.headers["Authorization"]

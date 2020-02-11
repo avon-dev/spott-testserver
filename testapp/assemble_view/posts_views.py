@@ -3,7 +3,7 @@ from testapp.assemble_view.__init__ import *
 
 
 from rest_framework import viewsets
-
+from django.core.serializers.json import DjangoJSONEncoder
 
 from random import *
 
@@ -11,13 +11,41 @@ class PostViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
 
 
+    def list(self,request):
+        data = Return_Module.string_to_dict(request.GET) #sending으로 묶여서 오는 파라미터 데이터 추출
+        page = data['page'] #클라이언트에서 보내주는 page count
+        craeted_time = data['created_time'] #클라이언트에서 보내주는 최신 게시물 생성 날짜
+
+        #페이징
+        begin_item = page
+        last_index = page + 21
+
+        #생성일 넘겨주는 부분
+        posts_obj = Post.objects.all().order_by('-id')[begin_item:last_index]\
+                    if craeted_time == ""\
+                    else Post.objects.filter(created__lte=craeted_time).order_by('-id')[begin_item:last_index]
+
+        posts_obj_cached = posts_obj
+
+        pageable = False if posts_obj_cached.count() < 21 else True
+
+        created_time = str(posts_obj_cached[0].created) if craeted_time == "" else craeted_time
+        home_serializers = HomeSerializer(posts_obj_cached[0:20],many=True)
+
+        dict = {"payload":{"items":home_serializers.data, "created_time":created_time, "pageable":pageable}}
+        posts_json = json.dumps(dict,cls=DjangoJSONEncoder)
+        # string = request.headers["Authorization"]
+        # decodedPayload = jwt.decode(string[4:],None,None)
+        return Response(posts_json,status=status.HTTP_200_OK)
+
     def retrieve(self, request, pk=None):
         string = request.headers["Authorization"]
         decodedPayload = jwt.decode(string[4:],None,None)
         posts = Post.objects.get(pk=pk)
         serializers = PostDetailSerializer(posts)
         user = User.objects.get(user_uid = decodedPayload["id"])
-
+        print("posts" + str(posts))
+        print("serial" + str(serializers.data))
         comment_count = len(serializers.data['comment'])
 
         try:
@@ -47,7 +75,7 @@ class PostViewSet(viewsets.ViewSet):
         serial_dumps['like_checked'] = like_checked
         serial_dumps['scrap_checked'] = scrap_checked
         serial_dumps['myself'] = myself
-        dict = {"payload":serial_dumps,"message":"okok"}
+        dict = {"payload":serial_dumps,"message":"show posts detail success"}
         result = json.dumps(dict)
         #해시태그, 좋아요, 스크랩
         return Response(result)
@@ -57,6 +85,8 @@ class PostViewSet(viewsets.ViewSet):
         string = request.headers["Authorization"]
         decodedPayload = jwt.decode(string[4:],None,None)
         request_data = Return_Module.multi_string_to_dict(request.data)
+
+
         # testdd = test.objects.create(latitude = request_data["latitude"] ,testfield = request_data["testfield"], photo = request.FILES["photo"], photo2 = request.FILES["photo2"], dummy = request_data["dummy"])
         user = User.objects.get(user_uid=decodedPayload["id"])
         posts = Post.objects.create(user = user,\
@@ -66,15 +96,24 @@ class PostViewSet(viewsets.ViewSet):
         posts_image = request.FILES['posts_image'],\
         back_image = request.FILES['back_image'],\
         public = request_data["public"])
-        # posts = Post.objects.create(latitude = request.data["latitude"], longitude = request.data["longitude"],text = request.data["text"] ,posts_image = request.FILES['posts_image'], back_image = request.FILES['back_image'])
-        # posts.save()
-        # serializers = PostsSerializer(data = request.data)
-        # if serializers.is_valid():
-        #      serializers.save()
-        #      asd = str(request.FILES['posts_image'].name)
-        # asd = request_data["text"]
-        # file = request.FILES['back_image'].content_type = 'image/jpeg'
-        return Response("success", status=status.HTTP_201_CREATED)
+
+        result = Return_Module.ReturnPattern.success_text\
+        ("create success",success=True)
+
+        try:
+            hash_tag_list = request_data['tag'][1:].split("#")
+        except Exception as e:
+            return Response(result, status=status.HTTP_201_CREATED)
+
+
+        hash_tag_obj_list = []
+        for count in range(0,len(hash_tag_list)):
+            hash_tag.append(HashTag(user = user, post = posts, tag_name = hash_tag_list[count]))
+
+        HashTag.objects.bulk_create(hash_tag)
+
+
+        return Response(result, status=status.HTTP_201_CREATED)
 
 
 
@@ -87,10 +126,29 @@ class PostViewSet(viewsets.ViewSet):
         user = User.objects.get(user_uid = decodedPayload["id"])
         posts = Post.objects.get(pk=pk, user_id=user.id)
         serializers = PostsContentsSerializer(posts, data = request_data, partial=True)
+
+        result = Return_Module.ReturnPattern.success_text\
+        ("partial_update success",result=True)
+
+
+        try:
+            hash_tag_list = request_data['tag'][1:].split("#")
+        except Exception as e:
+            return Response(result, status=status.HTTP_201_CREATED)
+
+
+        hash_tag_obj_list = []
+        for count in range(0,len(hash_tag_list)):
+            hash_tag.append(HashTag(user = user, post = posts, tag_name = hash_tag_list[count]))
+        hash_t = HashTag.objects.filter(user_id = user.id, post = pk).delete()
+        HashTag.objects.bulk_create(hash_tag)
+
         if serializers.is_valid():
             serializers.save()
-            return Response(serializers.data, status=status.HTTP_201_CREATED)
-        return Response(serializers.data, status=status.HTTP_200_CREATED)
+            return Response(result, status=status.HTTP_201_CREATED)
+        result = Return_Module.ReturnPattern.success_text\
+        ("partial_update fail",result=False)
+        return Response(result, status=status.HTTP_200_CREATED)
 
 
 
@@ -103,10 +161,14 @@ class PostViewSet(viewsets.ViewSet):
             user = User.objects.get(user_uid = decodedPayload["id"])
             posts = Post.objects.get(pk=pk, user_id=user.id)
         except ObjectDoesNotExist:
-            return Response("실패")
+            result = Return_Module.ReturnPattern.success_text\
+            ("delete fail",result=False)
+            return Response(result)
         else:
+            result = Return_Module.ReturnPattern.success_text\
+            ("delete success",result=True)
             posts.delete()
-            return Response("성공")
+            return Response(result)
 
     # def create(self, request):
     #
