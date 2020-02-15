@@ -9,14 +9,14 @@ class CommentView(APIView):
 
 
 
-    def get(self, request, post_pk, pk, format=None):
-        string = request.headers["Authorization"]
-        decodedPayload = jwt.decode(string[4:],None,None)
-        user = User.objects.get(user_uid = decodedPayload['id'])
-        comment = Comment.objects.filter(pk = pk,user_id = user.id)
-        return Response(comment.values())
+    # def get(self, request, post_pk, pk, format=None):
+    #     string = request.headers["Authorization"]
+    #     decodedPayload = jwt.decode(string[4:],None,None)
+    #     user = User.objects.get(user_uid = decodedPayload['id'])
+    #     comment = Comment.objects.filter(pk = pk, user_id = user.id)
+    #     return Response(comment.values())
 
-        #포스트에서 유저 아이디가 있으면
+
     def delete(self, request, post_pk, pk, format=None):
         post = Post.objects.get(pk = post_pk) #해당 포스트 가져오기
 
@@ -24,8 +24,10 @@ class CommentView(APIView):
         string = request.headers["Authorization"]
         decodedPayload = jwt.decode(string[4:],None,None)
         user = User.objects.get(user_uid = decodedPayload['id'])
+
         result = Return_Module.ReturnPattern.success_text\
         ("success delete",result=True)
+
         try:
             comment = Comment.objects.get(pk = pk, user_id = user.id)
         except ObjectDoesNotExist:
@@ -35,8 +37,9 @@ class CommentView(APIView):
             result = json.dumps(result)
             return Response(result)
         else:
-            comment.delete()
-    
+            comment.is_active = False
+            comment.save()
+
             return Response(result)
 
 
@@ -45,8 +48,10 @@ class CommentView(APIView):
         print(request_data)
         string = request.headers["Authorization"]
         decodedPayload = jwt.decode(string[4:],None,None)
+
         result = Return_Module.ReturnPattern.success_text\
         ("success update",result=True)
+
         try:
             user = User.objects.get(user_uid = decodedPayload['id'])
             comment = Comment.objects.get(pk = pk, user_id = user.id)
@@ -111,29 +116,29 @@ class CommentListView(APIView):
 
         # comment = Comment.objects.filter(user = post.comment.)
 
-        serial = CommentSerializer(comment_obj_cached[0:20], many=True)
+        comment_serial = CommentSerializer(comment_obj_cached[0:20], many=True)
 
         # user = User.objects.filter(id=comment.user_id)
 
-        jdump = json.dumps(serial.data)
-        dicc = json.loads(jdump)
+        comment_dump = json.dumps(comment_serial.data)
+        comment_dict = json.loads(comment_dump)
         count = 0
-        for data in dicc:
+        for data in comment_dict:
             if data['user']['user_uid'] == decodedPayload['id']:
-                dicc[count]['myself'] = True
+                comment_dict[count]['myself'] = True
             else:
-                dicc[count]['myself'] = False
+                comment_dict[count]['myself'] = False
             count = count + 1
-        dict = {"payload":{"items":dicc, "created_time":created_time, "pageable":pageable}}
-        posts_json = json.dumps(dict,cls=DjangoJSONEncoder)
+        result_dict = {"payload":{"items":comment_dict, "created_time":created_time, "pageable":pageable}}
+        result = json.dumps(result_dict,cls=DjangoJSONEncoder)
         # print(dict)
-        return Response(posts_json)
+        return Response(result)
 
 
     def post(self, request, post_pk, format=None):
         post = Post.objects.get(pk = post_pk)
-        string = request.headers["Authorization"]
-        decodedPayload = jwt.decode(string[4:],None,None)
+        token_value = request.headers["Authorization"]
+        decodedPayload = jwt.decode(token_value[4:],None,None)
         user = User.objects.get(user_uid = decodedPayload["id"])
         request_data = Return_Module.string_to_dict(request.data)
 

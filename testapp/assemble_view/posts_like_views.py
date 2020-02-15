@@ -6,18 +6,18 @@ class Like(APIView):
 
 
 #좋아요 상태인지 판별할 때
-    def get(self, request, pk, format=None):
-        post = Post.objects.get(pk = pk)
-        post1 = Post.objects.get(pk = 2)
-        # post.like_user.all()
-        string = request.headers["Authorization"]
-        decodedPayload = jwt.decode(string[4:],None,None)
-        user = User.objects.get(user_uid = decodedPayload["id"])
-        # user1 = User.objects.get(user_uid = 4)
-        # user.get_like.all()
-        user.get_like.all().values()
-        like = PostLike.objects.filter(post = post1)
-        return Response(str(user.get_like.all().count()))
+    # def get(self, request, pk, format=None):
+    #     post = Post.objects.get(pk = pk)
+    #     post1 = Post.objects.get(pk = 2)
+    #     # post.like_user.all()
+    #     string = request.headers["Authorization"]
+    #     decodedPayload = jwt.decode(string[4:],None,None)
+    #     user = User.objects.get(user_uid = decodedPayload["id"])
+    #     # user1 = User.objects.get(user_uid = 4)
+    #     # user.get_like.all()
+    #     user.get_like.all().values()
+    #     like = PostLike.objects.filter(post = post1)
+    #     return Response(str(user.get_like.all().count()))
 
 
     def post(self, request, pk, format=None):

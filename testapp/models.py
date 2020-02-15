@@ -31,11 +31,10 @@ class User(AbstractBaseUser, PermissionsMixin): #나중에 널 값 처리
     password = models.CharField(_('password'), max_length=200)
     nickname = models.CharField(max_length=150)
     profile_image = models.ImageField(upload_to = 'usr', null = True, blank = True)
-    date_joined = models.DateTimeField(_('date joined'), auto_now_add=True) #생성날짜
-    is_active = models.BooleanField(_('active'), default=True) #아이디 활성화 상태인지(삭제여부)
+    joined_date = models.DateTimeField(_('date joined'), auto_now_add=True) #생성날짜
+    is_active = models.BooleanField(_('active'), default=True) #아이디 활성화 상태인지(삭제여부)  판별
     is_login = models.BooleanField(default = False) #로그인 여부
     modify_date = models.DateTimeField(null = True, blank = True)
-    delete_date = models.DateTimeField(null = True, blank = True)
     is_staff = models.BooleanField(_('is staff'), default = False)
     objects = UserManager()
     USEREMAIL_FIELD = 'email'
@@ -97,12 +96,11 @@ class Post(models.Model): #!내용(conents), !작성일, !수정일, !공개여�
     views = models.IntegerField(default = 0)
     created = models.DateTimeField(auto_now_add=True) #작성일
     modify_date = models.DateTimeField(null = True, blank = True) #게시글 수정일
-    public = models.BooleanField(default = False) #공개여부
+    public = models.BooleanField(default = True) #공개여부
     report = models.BooleanField(default = False) #신고여부
     report_date = models.DateTimeField(null = True, blank = True) #신고 날짜
     problem = models.BooleanField(default = False)
     is_active = models.BooleanField(default = True)
-    delete_date = models.DateTimeField(null = True, blank = True)
     hashtag = models.ManyToManyField('User', through='HashTag',related_name='get_hashtag')
     like_user = models.ManyToManyField('User', through = 'PostLike',related_name= 'get_like')
     comment = models.ManyToManyField('User', through='Comment',related_name='get_comment')
@@ -121,8 +119,21 @@ class HashTag(models.Model): #! !댓글, !작성일, !수정일, !삭제일, !�
     user = models.ForeignKey(User,on_delete=models.CASCADE, related_name= 'user_hashtag')
     post = models.ForeignKey(Post,on_delete=models.CASCADE, related_name= 'post_hashtag')
     tag_name = models.CharField(max_length=250,verbose_name = '태그명') #태그
+    count = models.IntegerField(default = 0)
+    is_tag = models.BooleanField(default = True)
     created = models.DateTimeField(auto_now_add=True) #작성일
-    delete_date = models.DateTimeField(null = True, blank = True)
+
+    def __str__(self):
+        return self.tag_name
+
+
+
+class HashTag(models.Model): #! !댓글, !작성일, !수정일, !삭제일, !삭제여부
+    user = models.ForeignKey(User,on_delete=models.CASCADE, related_name= 'user_hashtag')
+    post = models.ForeignKey(Post,on_delete=models.CASCADE, related_name= 'post_hashtag')
+    tag_name = models.CharField(max_length=250,verbose_name = '태그명') #태그
+    is_tag = models.BooleanField(default = True)
+    created = models.DateTimeField(auto_now_add=True) #작성일
 
     def __str__(self):
         return self.tag_name
@@ -135,7 +146,6 @@ class Comment(models.Model): #! !댓글, !작성일, !수정일, !삭제일, !�
     created = models.DateTimeField(auto_now_add=True) #작성일
     modify_date = models.DateTimeField(null = True, blank = True) #댓글 수정일
     is_active = models.BooleanField(default = True)
-    delete_date = models.DateTimeField(null = True, blank = True)
 
 
     def __str__(self):
@@ -146,7 +156,6 @@ class PostLike(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name= 'post_like')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name= 'user_like')
     created_date = models.DateTimeField(auto_now_add=True,)
-    cancel_date = models.DateTimeField(null = True, blank = True)
 
     def __str__(self):
         return str(self.post.id)
@@ -156,7 +165,6 @@ class Scrapt(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name= 'post_scrap')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name= 'user_scrap')
     created_date = models.DateTimeField(auto_now_add=True,)
-    cancel_date = models.DateTimeField(null = True, blank = True)
 
 
     class Meta:

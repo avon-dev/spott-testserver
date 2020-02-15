@@ -4,7 +4,7 @@ from .models import *
 
 
 class UserAdmin(admin.ModelAdmin):
-    list_display = ['user_uid', 'date_joined', 'last_login', 'is_staff']
+    list_display = ['user_uid', 'joined_date', 'last_login', 'is_staff']
 
 admin.site.register(User, UserAdmin)
 # admin.site.register(UserData)

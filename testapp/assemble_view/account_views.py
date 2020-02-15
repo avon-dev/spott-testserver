@@ -111,7 +111,7 @@ class AccountView(APIView):
 
         else:
             result = Return_Module.ReturnPattern.success_text\
-            (duplication=True, message="Duplicate nickname")
+            (sign_up=False, message="Create fail")
             return Response(result, status = status.HTTP_200_OK)
 
 

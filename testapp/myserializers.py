@@ -1,6 +1,22 @@
 from rest_framework import serializers
 from .models import *
 import datetime
+
+
+
+
+
+
+class SerialTest(serializers.Serializer):
+    tag_name = serializers.CharField(max_length = 200)
+    user_is_active = serializers.CharField(max_length = 200)
+    # content = serializers.CharField(max_length=200)
+    # created = serializers.DateTimeField()
+
+
+
+
+
 class UserCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -84,7 +100,7 @@ class PostDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         # fields = ('user',)
-        exclude = ('modify_date','delete_date','is_active','problem','report_date','report')
+        exclude = ('modify_date','is_active','problem','report_date','report')
 #################################################
 
 
@@ -156,7 +172,7 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         # fields = ('__all__')
-        exclude = ('is_active','delete_date','post','modify_date')
+        exclude = ('is_active','post','modify_date')
 
 
 
@@ -164,18 +180,19 @@ class SearchNameSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         # fields = ('__all__')
-        fields = ('nickname',)
+        fields = ('id','nickname',)
 
 
 class SearchTagSerializer(serializers.ModelSerializer):
     class Meta:
         model = HashTag
         # fields = ('__all__')
-        fields = ('tag_name',)
+        fields = ('tag_name','is_tag')
 
 
 class TagListSerializer(serializers.ModelSerializer):
+    post = HomeSerializer(read_only=True)
     class Meta:
         model = HashTag
         # fields = ('__all__')
-        fields = ('post_id',)
+        fields = ('__all__')

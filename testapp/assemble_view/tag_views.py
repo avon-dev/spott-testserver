@@ -4,17 +4,20 @@ from testapp.assemble_view.__init__ import *
 
 class HashTagView(APIView):
 
-    permission_classes = ()
+    permission_classes = (IsAuthenticated,)
 #
 
-
+#검색된 태그로 포스트의 객체들을 가져온다
+#유효한 게시물만 가져오도록 하게끔
     def get(self, request, format=None):
         tag_name = request.GET["tag_name"]
         tag = HashTag.objects.filter(tag_name = tag_name)
         tag_list = TagListSerializer(tag, many = True)
         # post = Post.objects.filter(id__in = tag_list).distinct('id')
         # serializers = PostSerializer(post, many = True)
-        return Response(tag_list.data)
+        result = Return_Module.ReturnPattern.success_list_text\
+        ("success",tag_list.data)
+        return Response(result)
 
 
     def post(self, request, format=None):
@@ -32,5 +35,5 @@ class HashTagView(APIView):
 
 
         create_hash = HashTag.objects.bulk_create(hash_tag)
-        # print(str(create_hash))
-        return Response("suuccess")
+
+        return Response("success")

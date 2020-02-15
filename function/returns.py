@@ -2,7 +2,7 @@
 import json
 
 
-
+from django.core.serializers.json import DjangoJSONEncoder
 import json
 
 
@@ -58,12 +58,12 @@ class ReturnPattern:
 
     def success_text(message,**dict):
         success = {"payload":dict,"message":message}
-        result = json.dumps(success)
+        result = json.dumps(success, cls=DjangoJSONEncoder)
         return result
 
     def success_list_text(message,*list):
         success = {"payload":list,"message":message}
-        result = json.dumps(success)
+        result = json.dumps(success, cls=DjangoJSONEncoder)
         return result
 
 
