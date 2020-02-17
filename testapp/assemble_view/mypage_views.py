@@ -50,6 +50,10 @@ class UserMypageViewSet(APIView):
 
     def get(self, request, pk, format=None):
 
+        request_data = Return_Module.string_to_dict(request.GET) #sending으로 묶여서 오는 파라미터 데이터 추출
+        action = request_data['action']
+        action_search = 1201
+        action_user_mypage = 1202
         user = User.objects.get(is_active = True, pk = pk)
         post = Post.objects.filter(is_active = True, problem = False, is_public = True, user = user).order_by('-id')
 
@@ -61,4 +65,29 @@ class UserMypageViewSet(APIView):
         ("show user mypage", user = user_serializers.data, posts = post_serializers.data)
         # dict = {"payload":{"user":user_serializers.data,"posts":post_serializers.data},"message":"success"}
         # result = json.dumps(dict)
+
+        if action == action_search:
+            string = request.headers["Authorization"]
+            decodedPayload = jwt.decode(string[4:],None,None)
+            user = User.objects.get(user_uid = decodedPayload['id'])
+            recent_search_word = user.recent_search
+            print(decodedPayload['id'])
+            count = 0
+            for obj in recent_search_word:
+                if obj['user_pk'] == pk:
+                    break
+                else:
+                    count += 1
+
+            if count == len(recent_search_word):
+                user.recent_search.insert(0,{"action":1202,"tag_name":"", "user_pk":pk})
+                user.save()
+            else:
+                del user.recent_search[count]
+                user.recent_search.insert(0,{"action":1202,"tag_name":"", "user_pk":pk})
+                user.save()
+
+            result = Return_Module.ReturnPattern.success_text\
+            ("search success", user = user_serializers.data, posts = post_serializers.data)
+            return Response(result,status=status.HTTP_201_CREATED)
         return Response(result)

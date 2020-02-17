@@ -101,6 +101,7 @@ class Post(models.Model): #!내용(conents), !작성일, !수정일, !공개여�
     modify_date = models.DateTimeField(null = True, blank = True) #게시글 수정일
     is_public = models.BooleanField(default = True) #공개여부
     report = models.BooleanField(default = False) #신고여부
+    reason_for_report = models.CharField(default = "", blank = True, max_length = 200)
     report_date = models.DateTimeField(null = True, blank = True) #신고 날짜
     problem = models.BooleanField(default = False)
     is_active = models.BooleanField(default = True)

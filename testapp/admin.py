@@ -17,7 +17,7 @@ def change(modeladmin, request, queryset):
 
 
 class UserAdmin(admin.ModelAdmin):
-    list_display = ['pk','user_uid', 'joined_date', 'last_login', 'is_staff']
+    list_display = ['pk','user_uid', 'joined_date', 'last_login', 'is_staff','is_active']
 
 # user = models.ForeignKey(User,on_delete=models.CASCADE, related_name= 'get_user') #get_post로 변경
 # posts_image = models.ImageField(upload_to = 'post') #R
@@ -40,7 +40,7 @@ class UserAdmin(admin.ModelAdmin):
 class PostsAdmin(admin.ModelAdmin):
     list_display = ['image_tag','pk', 'contents', 'views', 'report', 'problem', 'is_active']
     list_display_links = ['pk', 'contents', 'views', 'report', 'problem', 'is_active']
-    list_filter = ['report', 'problem']
+    list_filter = ['report', 'problem','contents']
     search_fields = ['report']
     date_hierarchy = 'created'
     readonly_fields = ['user', 'posts_image', 'back_image', 'latitude', 'longitude', 'contents', 'modify_date', 'report_date']

@@ -107,13 +107,12 @@ class PostDetailSerializer(serializers.ModelSerializer):
 
 ##############################################
 
-
 class MyUserSerializer(serializers.ModelSerializer):
     # user = UserProfile(read_only=True)
     class Meta:
         model = User
         # fields=('__all__')
-        fields = ('email','nickname','profile_image',)
+        fields = ('email','nickname','profile_image','is_public')
         # exclude = ('modify_date','delete_date','is_active','problem','report_date','report')
 
 class MypageSerializer(serializers.ModelSerializer):

@@ -18,6 +18,7 @@ class Scrap(APIView):
         string = request.headers["Authorization"]
         decodedPayload = jwt.decode(string[4:],None,None)
         user = User.objects.get(user_uid = decodedPayload["id"])
+        print(decodedPayload['id'])
         # user_data = UserData.objects.get(user = user)
 
         try:
@@ -33,6 +34,8 @@ class Scrap(APIView):
             result['message'] = "already created"
             result['payload']['count'] = 0
             result = json.dumps(result)
+
+        print(str(scrap))
         return Response(result)
 
 
@@ -45,7 +48,7 @@ class Scrap(APIView):
         decodedPayload = jwt.decode(string[4:],None,None)
         user = User.objects.get(user_uid = decodedPayload["id"])
         # user_data = UserData.objects.get(user = user)
-
+        print(decodedPayload['id'])
         result = Return_Module.ReturnPattern.success_text\
         ("success delete",result=False ,count=-1)
         try:

@@ -59,7 +59,7 @@ class SearchView(APIView):
 class RecentSearchView(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
 
-    action_user = 1101
+    action_user = 1202
     action_tag = 1102
     def list(self,request):
         string = request.headers["Authorization"]
@@ -69,21 +69,23 @@ class RecentSearchView(viewsets.ViewSet):
         tag = HashTag.objects.all()
         list = []
         myself = user.get(user_uid = decodedPayload['id'])
-
+        count = 0
         for recent in myself.recent_search:
-            if recent['action'] == 1101:
+            if recent['action'] == 1202:
                 list.append(SearchNameSerializer(user.get(pk = recent['user_pk'])).data)
+                list[count]['is_tag'] = False
             else:
                 list.append(SearchTagSerializer(tag.get(name = recent['tag_name'])).data)
+            count += 1
 
-
-
-        return Response(list,status=status.HTTP_200_OK)
+        result = Return_Module.ReturnPattern.success_text\
+        ("create success",items = list)
+        return Response(result,status=status.HTTP_200_OK)
 
 
 
 #사이즈가 16이상시 맨 마지막꺼 pop 시키는 코드 추가
-    def create(self, request):
+    def post(self, request):
         request_data_key = ['action','tag_name', 'user_pk']
 
         string = request.headers["Authorization"]
@@ -91,26 +93,52 @@ class RecentSearchView(viewsets.ViewSet):
         request_data = Return_Module.string_to_dict(request.data)
         user = User.objects.get(user_uid = decodedPayload['id'])
         print(decodedPayload['id'])
-        user.recent_search.insert(0,request_data)
+        # user.recent_search.insert(0,request_data)
         # del user.recent_search[0]
-        user.save()
+        # user.save()
+        #
+        # result = Return_Module.ReturnPattern.success_text\
+        # ("create success",result = True)
+
+
+        return Response(user.recent_search, status=status.HTTP_201_CREATED)
+
+
+
+#
+    # def partial_update(self, request, pk=None):
+    #     position = int(pk)
+    #     string = request.headers["Authorization"]
+    #     decodedPayload = jwt.decode(string[4:],None,None)
+    #     user = User.objects.get(user_uid = decodedPayload['id'])
+    #     recent_search_word = user.recent_search[position]
+    #     del user.recent_search[position]
+    #     user.recent_search.insert(0,recent_search_word)
+    #     user.save()
+    #
+    #     result = Return_Module.ReturnPattern.success_test\
+    #     ("recent_search_item_click success",result = True)
+    #     return Response(result, status=status.HTTP_404_NOT_FOUND)
+
+
+
+
+    def destroy(self, request, pk=None):
+        position = int(pk)
+        string = request.headers["Authorization"]
+        decodedPayload = jwt.decode(string[4:],None,None)
+        user = User.objects.get(user_uid = decodedPayload['id'])
+
+        if position == -1:
+            user.recent_search.clear()
+            user.save()
+        else:
+            if len(user.recent_search) == 0:
+                pass
+            else:
+                del user.recent_search[position]
+                user.save()
 
         result = Return_Module.ReturnPattern.success_text\
-        ("create success",result = True)
-
-
-        return Response(result, status=status.HTTP_201_CREATED)
-
-
-#
-# #
-#     def partial_update(self, request, pk=None):
-#
-#             return Response(result, status=status.HTTP_404_NOT_FOUND)
-#
-#
-#
-#
-#     def destroy(self, request, pk=None):
-#
-#             return Response(result)
+        ("delete success",result = True)
+        return Response(result)

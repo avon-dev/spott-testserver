@@ -149,6 +149,22 @@ class AccountView(APIView):
             (sign_up=False, message="Create fail")
             return Response(result, status = status.HTTP_200_OK)
 
+    def patch(self, request, format = None):
+        request_data = Return_Module.string_to_dict(request.data)
+        email = request_data['email']
+        password = request_data['password']
+        try:
+            result = Return_Module.ReturnPattern.success_text("update success password",result=True)
+            user = User.objects.get(is_active = True, email = email)
+        except Exception as e:
+            result = Return_Module.ReturnPattern.success_text("update fail password",result=False)
+            return Response(result, status = status.HTTP_200_OK)
+
+        else:
+            user.set_password(password)
+            user.save()
+            return Response(result, status = status.HTTP_200_OK)
+
 
 
 

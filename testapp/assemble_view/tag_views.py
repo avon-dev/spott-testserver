@@ -14,8 +14,12 @@ class HashTagView(APIView):
         page = request_data['page'] #클라이언트에서 보내주는 page count
         craeted_time = request_data['created_time'] #클라이언트에서 보내주는 최신 게시물 생성 날짜
         tag_name = request_data["tag_name"]
-
+        action = request_data['action']
+        request_data_key = ['action','tag_name', 'user_pk']
+        action_search = 1101
+        action_read_tag = 1102
         #페이징
+
         begin_item = page
         last_index = page + 31
 
@@ -31,9 +35,37 @@ class HashTagView(APIView):
         created_time = str(posts_obj_cached[0].created) if craeted_time == "" else craeted_time
         home_serializers = HomeSerializer(posts_obj_cached[0:30],many=True)
 
-        result = Return_Module.ReturnPattern.success_text\
-        ("show mypage", items = home_serializers.data, created_time = created_time, pageable = pageable)
+        if action == action_search:
+            string = request.headers["Authorization"]
+            decodedPayload = jwt.decode(string[4:],None,None)
+            user = User.objects.get(user_uid = decodedPayload['id'])
+            recent_search_word = user.recent_search
+            print(decodedPayload['id'])
+            count = 0
+            for obj in recent_search_word:
+                if obj['tag_name'] == tag_name:
+                    print(f"equals{count}")
+                    break
+                else:
+                    count += 1
+                    print(f"not equals{count}")
+            if count == len(recent_search_word):
+                print(f"insert{count}")
+                user.recent_search.insert(0,{"action":1102,"tag_name":tag_name,"user_pk": -1})
+                user.save()
+            else:
+                print(f"del{count}")
+                del user.recent_search[count]
+                user.recent_search.insert(0,{"action":1102,"tag_name":tag_name,"user_pk": -1})
+                user.save()
 
+            result = Return_Module.ReturnPattern.success_text\
+            ("search success", items = home_serializers.data, created_time = created_time, pageable = pageable)
+            return Response(result,status=status.HTTP_200_OK)
+
+
+        result = Return_Module.ReturnPattern.success_text\
+        ("show Posts with that tag", items = home_serializers.data, created_time = created_time, pageable = pageable)
         return Response(result,status=status.HTTP_200_OK)
 # #페이징
 # begin_item = page
