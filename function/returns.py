@@ -66,6 +66,14 @@ class ReturnPattern:
         result = json.dumps(success, cls=DjangoJSONEncoder)
         return result
 
+    def success_test(message,**dict):
+        success = {"payload":dict,"message":message}
+        return success
+
+    def success_list_test(message,*list):
+        success = {"payload":list,"message":message}
+        return success
+
 
 
 def string_to_dict(request):

@@ -8,7 +8,7 @@ class Posts(APIView):
         lng_ne = data['lng_ne']
         lat_sw = data['lat_sw']
         lng_sw = data['lng_sw']
-        posts_data = Post.objects.filter(is_active = True, problem = False, public = True, latitude__range=[lat_sw,lat_ne],longitude__range=[lng_sw,lng_ne]).\
+        posts_data = Post.objects.filter(is_active = True, problem = False, is_public = True, latitude__range=[lat_sw,lat_ne],longitude__range=[lng_sw,lng_ne]).\
         order_by('-id')
         serializers = PostSerializer(posts_data, many = True)
         dict = {"payload":serializers.data}

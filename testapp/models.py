@@ -23,7 +23,8 @@ from django.contrib.auth.models import PermissionsMixin
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.core.mail import send_mail
 from .managers import UserManager
-
+from django.utils.html import mark_safe
+from django.contrib.postgres.fields import JSONField
 
 class User(AbstractBaseUser, PermissionsMixin): #나중에 널 값 처리
     user_uid = models.CharField(max_length=255, unique = True) #이메일 해싱
@@ -33,9 +34,11 @@ class User(AbstractBaseUser, PermissionsMixin): #나중에 널 값 처리
     profile_image = models.ImageField(upload_to = 'usr', null = True, blank = True)
     joined_date = models.DateTimeField(_('date joined'), auto_now_add=True) #생성날짜
     is_active = models.BooleanField(_('active'), default=True) #아이디 활성화 상태인지(삭제여부)  판별
+    is_public = models.BooleanField(default = True)
     is_login = models.BooleanField(default = False) #로그인 여부
     modify_date = models.DateTimeField(null = True, blank = True)
     is_staff = models.BooleanField(_('is staff'), default = False)
+    recent_search = JSONField(blank = True, default = list)
     objects = UserManager()
     USEREMAIL_FIELD = 'email'
     USERNAME_FIELD = 'user_uid'
@@ -96,12 +99,12 @@ class Post(models.Model): #!내용(conents), !작성일, !수정일, !공개여�
     views = models.IntegerField(default = 0)
     created = models.DateTimeField(auto_now_add=True) #작성일
     modify_date = models.DateTimeField(null = True, blank = True) #게시글 수정일
-    public = models.BooleanField(default = True) #공개여부
+    is_public = models.BooleanField(default = True) #공개여부
     report = models.BooleanField(default = False) #신고여부
     report_date = models.DateTimeField(null = True, blank = True) #신고 날짜
     problem = models.BooleanField(default = False)
     is_active = models.BooleanField(default = True)
-    hashtag = models.ManyToManyField('User', through='HashTag',related_name='get_hashtag')
+    hashtag = models.ManyToManyField('HashTag', through='PostTag',related_name='get_hashtag')
     like_user = models.ManyToManyField('User', through = 'PostLike',related_name= 'get_like')
     comment = models.ManyToManyField('User', through='Comment',related_name='get_comment')
     scrap_users = models.ManyToManyField('User', through = 'Scrapt',related_name= 'get_scrap')
@@ -109,34 +112,33 @@ class Post(models.Model): #!내용(conents), !작성일, !수정일, !공개여�
     def __str__(self):
         return str(self.id)
 
+    def image_tag(self):
+        return mark_safe('<img src="%s" width="150" height="150" />' % (self.posts_image.url))  # Get Image url
+
+        image_tag.short_description = 'Image'
+
+
 # class UserData(models.Model):
 #     user = models.OneToOneField(User, on_delete=models.CASCADE,related_name= 'user_data')
 #     scrap_users = models.ManyToManyField('Post', through = 'Scrap',related_name= 'get_scrap')
 #     objects = UserManager()
 
-
 class HashTag(models.Model): #! !댓글, !작성일, !수정일, !삭제일, !삭제여부
-    user = models.ForeignKey(User,on_delete=models.CASCADE, related_name= 'user_hashtag')
-    post = models.ForeignKey(Post,on_delete=models.CASCADE, related_name= 'post_hashtag')
-    tag_name = models.CharField(max_length=250,verbose_name = '태그명') #태그
+    name = models.CharField(unique = True, max_length=250, verbose_name = '태그명') #태그
+    is_tag = models.BooleanField(default = True)
     count = models.IntegerField(default = 0)
-    is_tag = models.BooleanField(default = True)
+
+    def __str__(self):
+        return self.name
+
+
+class PostTag(models.Model): #! !댓글, !작성일, !수정일, !삭제일, !삭제여부
+    post = models.ForeignKey(Post,on_delete=models.CASCADE, related_name= 'post_posttag')
+    tag = models.ForeignKey(HashTag,on_delete=models.CASCADE, related_name= 'tag_posttag')
     created = models.DateTimeField(auto_now_add=True) #작성일
 
     def __str__(self):
-        return self.tag_name
-
-
-
-class HashTag(models.Model): #! !댓글, !작성일, !수정일, !삭제일, !삭제여부
-    user = models.ForeignKey(User,on_delete=models.CASCADE, related_name= 'user_hashtag')
-    post = models.ForeignKey(Post,on_delete=models.CASCADE, related_name= 'post_hashtag')
-    tag_name = models.CharField(max_length=250,verbose_name = '태그명') #태그
-    is_tag = models.BooleanField(default = True)
-    created = models.DateTimeField(auto_now_add=True) #작성일
-
-    def __str__(self):
-        return self.tag_name
+        return str(f'post pk:{self.post} tag pk:{self.tag}')
 
 
 class Comment(models.Model): #! !댓글, !작성일, !수정일, !삭제일, !삭제여부

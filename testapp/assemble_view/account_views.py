@@ -8,8 +8,10 @@ from django.contrib.auth.hashers import make_password, is_password_usable, check
 class EmailAuthentication(APIView):
     permission_classes = []
     request_bundle = "sending"
+    sign_up_email_authentication = 1001
+    forgot_user_password = 1002
+    request_data_key = ['action','email']
     def get(self, request, format=None):
-        feild_name = "email"
         random_number = ""
 
         # sending으로 안 묶여 있으면 에러 처리
@@ -34,31 +36,64 @@ class EmailAuthentication(APIView):
                 dict = {feild_name:"Not an email pattern"}
                 result = Return_Module.ReturnPattern.error_text(**dict)
                 return Response(result,status = status.HTTP_400_BAD_REQUEST)
+        # print(self.request_data_key)
+        if request_data[self.request_data_key[0]] == self.sign_up_email_authentication:
 
-        try:
-            user = User.objects.get(email=email)
-        except ObjectDoesNotExist:
-            random_number = ran.RanStrCraete.number(4) #4자리 수의 랜덤 숫자 생성
+            try:
+                user = User.objects.get(email=email)
+            except ObjectDoesNotExist:
+                print("send success")
+                random_number = ran.RanStrCraete.number(4) #4자리 수의 랜덤 숫자 생성
 
-            subject = '서버에서 발송된 이메일'
-            message = '인증코드: '+ random_number
-            user_email = request_data["email"]
-            email = EmailMessage(subject,message,to=[user_email])
+                subject = '서버에서 발송된 이메일'
+                message = '인증코드: '+ random_number
+                user_email = request_data["email"]
+                email = EmailMessage(subject,message,to=[user_email])
 
-            result = Return_Module.ReturnPattern.success_text\
-            ("Send success", duplication=False,code=random_number)
+                result = Return_Module.ReturnPattern.success_text\
+                ("Send success", duplication=False,code=random_number)
 
 
-            if email.send() == 1: #이메일 보내기 성공시
-                return Response(result)
+                if email.send() == 1: #이메일 보내기 성공시
+                    return Response(result)
+                else:
+                    return Response({"error":"Email failed to send"}) #클라이언트와 회의 하여 다시 작성
             else:
-                return Response({"error":"Email failed to send"}) #클라이언트와 회의 하여 다시 작성
+                print("send fail")
+                result = Return_Module.ReturnPattern.success_text\
+                ("Duplicate email", duplication=True, code=random_number)
+                return Response(result)
+
+        elif request_data[self.request_data_key[0]] == self.forgot_user_password:
+
+            try:
+                user = User.objects.get(email=email)
+
+            except ObjectDoesNotExist:
+                result = Return_Module.ReturnPattern.success_text\
+                ("This email is not registration", registration=False, code=random_number)
+                return Response(result)
+
+            else:
+                random_number = ran.RanStrCraete.number(4) #4자리 수의 랜덤 숫자 생성
+
+                subject = '서버에서 발송된 이메일'
+                message = '인증코드: '+ random_number
+                user_email = request_data["email"]
+                email = EmailMessage(subject,message,to=[user_email])
+
+                result = Return_Module.ReturnPattern.success_text\
+                ("Send success", registration=True,code=random_number)
+
+
+                if email.send() == 1: #이메일 보내기 성공시
+                    return Response(result)
+                else:
+                    return Response({"error":"Email failed to send"}) #클라이언트와 회의 하여 다시 작성
         else:
-
             result = Return_Module.ReturnPattern.success_text\
-            ("Duplicate email", duplication=True, code=random_number)
-            return Response(result)
-
+            ("not find action value")
+            return Response(result, status = status.HTTP_400_BAD_REQUEST)
 
 
 

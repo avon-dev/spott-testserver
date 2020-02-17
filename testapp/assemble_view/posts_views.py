@@ -4,7 +4,7 @@ from testapp.assemble_view.__init__ import *
 
 from rest_framework import viewsets
 from django.core.serializers.json import DjangoJSONEncoder
-
+from django.db import IntegrityError
 from random import *
 
 class PostViewSet(viewsets.ViewSet):
@@ -21,9 +21,9 @@ class PostViewSet(viewsets.ViewSet):
         last_index = page + 21
 
         #생성일 넘겨주는 부분
-        posts_obj = Post.objects.filter(is_active = True, problem = False, public = True).order_by('-id')[begin_item:last_index]\
+        posts_obj = Post.objects.filter(is_active = True, problem = False, is_public = True).order_by('-id')[begin_item:last_index]\
                     if craeted_time == ""\
-                    else Post.objects.filter(is_active = True, problem = False, public = True, created__lte=craeted_time).order_by('-id')[begin_item:last_index]
+                    else Post.objects.filter(is_active = True, problem = False, is_public = True, created__lte=craeted_time).order_by('-id')[begin_item:last_index]
 
         posts_obj_cached = posts_obj
 
@@ -41,7 +41,7 @@ class PostViewSet(viewsets.ViewSet):
         string = request.headers["Authorization"]
         decodedPayload = jwt.decode(string[4:],None,None)
         try:
-            posts = Post.objects.get(public = True, problem = False, is_active = True, pk = pk)
+            posts = Post.objects.get(is_public = True, problem = False, is_active = True, pk = pk)
         except Exception as e:
             result = Return_Module.ReturnPattern.success_text\
             ("posts_get fail",result=False)
@@ -99,23 +99,31 @@ class PostViewSet(viewsets.ViewSet):
         contents = request_data["contents"],\
         posts_image = request.FILES['posts_image'],\
         back_image = request.FILES['back_image'],\
-        public = True)
+        is_public = True)
 
         result = Return_Module.ReturnPattern.success_text\
         ("create success",success=True)
 
         try:
-            hash_tag_list = request_data['tag'][1:].split("#")
-            print(str(hash_tag_list))
+            hash_tag_name_list = request_data['tag'][1:].split("#")
+            print(str(hash_tag_name_list))
         except Exception as e:
             return Response(result, status=status.HTTP_201_CREATED)
 
 
-        hash_tag_obj_list = []
-        for count in range(0,len(hash_tag_list)):
-            hash_tag_obj_list.append(HashTag(user = user, post = posts, tag_name = hash_tag_list[count]))
-
-        HashTag.objects.bulk_create(hash_tag_obj_list)
+        for tag_name in hash_tag_name_list:
+            try:
+                hash_tag_list = HashTag.objects.create(name = tag_name)
+            except  IntegrityError:
+                hash_tag_list = HashTag.objects.get(name = tag_name)
+                PostTag.objects.create(post = posts, tag = hash_tag_list)
+                hash_tag_list.count += 1
+                hash_tag_list.save()
+                # return Response("ex")
+            else:
+                PostTag.objects.create(post = posts, tag = hash_tag_list)
+                hash_tag_list.count += 1
+                hash_tag_list.save()
 
 
         return Response(result, status=status.HTTP_201_CREATED)
@@ -139,9 +147,22 @@ class PostViewSet(viewsets.ViewSet):
 
         print(request_data['contents'])
         try:
-            hash_tag_list = request_data['tag'][1:].split("#")
+            hash_tag_name_list = request_data['tag'][1:].split("#")
         except Exception as e:
             if serializers.is_valid():
+                post_hash_list = PostTag.objects.filter(post = posts)#연결된 태그 말소
+                hash_tag_list = HashTag.objects.all() #태그 테이블 데이터 불러오기
+
+                for post_hash in post_hash_list.values():
+                    hash_obj = hash_tag_list.get(id = post_hash['tag_id'])
+
+                    hash_count = hash_obj.count - 1
+                    if hash_count <= 0:
+                        hash_obj.delete()
+                    else:
+                        hash_obj.count = hash_count
+                        hash_obj.save()
+                post_hash_list.delete()
                 serializers.save()
                 return Response(result, status=status.HTTP_201_CREATED)
             result = Return_Module.ReturnPattern.success_text\
@@ -149,11 +170,38 @@ class PostViewSet(viewsets.ViewSet):
             return Response(result, status=status.HTTP_404_NOT_FOUND)
 
         else:
-            hash_tag_obj_list = []
-            for count in range(0,len(hash_tag_list)):
-                hash_tag_obj_list.append(HashTag(user = user, post = posts, tag_name = hash_tag_list[count]))
-            hash_t = HashTag.objects.filter(user_id = user.id, post = pk).delete()
-            HashTag.objects.bulk_create(hash_tag_obj_list)
+            post_hash_list = PostTag.objects.filter(post = posts)#연결된 태그 말소
+            hash_tag_list = HashTag.objects.all() #태그 테이블 데이터 불러오기
+
+            for post_hash in post_hash_list.values():
+                hash_obj = hash_tag_list.get(id = post_hash['tag_id'])
+
+                hash_count = hash_obj.count - 1
+                if hash_count <= 0:
+                    hash_obj.delete()
+                else:
+                    hash_obj.count = hash_count
+                    hash_obj.save()
+            post_hash_list.delete()
+
+            # print(hash_tag_name_list)
+            for tag_name in hash_tag_name_list:
+                try:
+                    hash_tag_list = HashTag.objects.create(name = tag_name)
+                except  IntegrityError:
+                    hash_tag_list = HashTag.objects.get(name = tag_name)
+                    PostTag.objects.create(post = posts, tag = hash_tag_list)
+                    hash_tag_list.count += 1
+                    hash_tag_list.save()
+                    # return Response("ex")
+                else:
+                    PostTag.objects.create(post = posts, tag = hash_tag_list)
+                    hash_tag_list.count += 1
+                    hash_tag_list.save()
+
+
+
+
 
             if serializers.is_valid():
                 serializers.save()
@@ -181,6 +229,22 @@ class PostViewSet(viewsets.ViewSet):
             ("delete success",result=True)
             posts.is_active = False
             posts.save()
+
+
+            post_hash_list = PostTag.objects.filter(post = posts)#연결된 태그 조회
+            hash_tag_list = HashTag.objects.all() #태그 테이블 데이터 불러오기
+
+            for post_hash in post_hash_list.values():
+                hash_obj = hash_tag_list.get(id = post_hash['tag_id'])
+
+                hash_count = hash_obj.count - 1
+                if hash_count <= 0:
+                    hash_obj.delete()
+                else:
+                    hash_obj.count = hash_count
+                    hash_obj.save()
+
+            post_hash_list.delete()
             return Response(result)
 
     # def create(self, request):

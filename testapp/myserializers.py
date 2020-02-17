@@ -92,7 +92,7 @@ class UserProfile(serializers.ModelSerializer):
 class HashTagSerializer(serializers.ModelSerializer):
     class Meta:
         model = HashTag
-        fields = ('__all__')
+        fields = ('name',)
 
 class PostDetailSerializer(serializers.ModelSerializer):
     user = UserProfile(read_only=True)
@@ -113,7 +113,7 @@ class MyUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         # fields=('__all__')
-        fields = ('nickname','profile_image',)
+        fields = ('email','nickname','profile_image',)
         # exclude = ('modify_date','delete_date','is_active','problem','report_date','report')
 
 class MypageSerializer(serializers.ModelSerializer):
@@ -180,19 +180,19 @@ class SearchNameSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         # fields = ('__all__')
-        fields = ('id','nickname',)
+        fields = ('id','nickname','profile_image')
 
 
 class SearchTagSerializer(serializers.ModelSerializer):
     class Meta:
         model = HashTag
         # fields = ('__all__')
-        fields = ('tag_name','is_tag')
+        fields = ('name','is_tag')
 
 
 class TagListSerializer(serializers.ModelSerializer):
     post = HomeSerializer(read_only=True)
     class Meta:
-        model = HashTag
+        model = PostTag
         # fields = ('__all__')
         fields = ('__all__')

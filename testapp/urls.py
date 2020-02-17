@@ -20,6 +20,7 @@ from rest_framework import routers
 router = DefaultRouter(trailing_slash=False)#라우터 마지막에 / 제거
 
 router.register('posts', posts_views.PostViewSet, basename='posts')
+router.register('recent', search_views.RecentSearchView, basename='recent')
 # router.register('comments', comment_views.CommentViewSet, basename='comments')
 
 urlpatterns = [
@@ -36,7 +37,7 @@ urlpatterns = [
     path('mypage/<int:pk>', mypage_views.UserMypageViewSet.as_view()),
     path('users', user_views.UserView.as_view()),
     path('users/password', user_views.PasswordView.as_view()),
-    path('map/posts', map_views.Posts.as_view()),
+    path('map/posts', map_views.Posts.as_view()), #post에서 분기처리
     path('like/<int:pk>', posts_like_views.Like.as_view()),
     path('scrap/<int:pk>', scrap_views.Scrap.as_view()),
     path('scrap/ids', scrap_views.MultiScrap.as_view()),

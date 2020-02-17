@@ -20,31 +20,37 @@ class UserView(BaseAPIView):
         return Response(result)
 
     def patch (self, request, format=None):
-        request_data = Return_Module.string_to_dict(request.data)
-        is_key = False
-
+        print(str(request.data))
+        print(str(request.FILES))
         string = request.headers["Authorization"]
         decodedPayload = jwt.decode(string[4:],None,None)
         user = User.objects.get(user_uid = decodedPayload["id"])
-
-        if 'profile_image' in request.FILES.keys() and 'nickname' in request_data.keys():
-            user.profile_image = request.FILES['profile_image']
-            user.nickname = request_data['nickname']
-            user.save()
-            is_key = True
-        elif 'profile_image' in request.FILES.keys():
+        try:
+            request_data = Return_Module.multi_string_to_dict(request.data)
+        except KeyError as e:
             user.profile_image = request.FILES['profile_image']
             user.save()
-        elif 'nickname' in request_data.keys():
-            user.nickname = request_data['nickname']
-            user.save()
-        else:
-            result = Return_Module.ReturnPattern.success_text('update fail profile',result=False)
+            result = Return_Module.ReturnPattern.success_text('update success profile',result=True)
             return Response(result)
+        else:
+
+            if 'profile_image' in request.FILES.keys() and 'nickname' in request_data.keys():
+                user.profile_image = request.FILES['profile_image']
+                user.nickname = request_data['nickname']
+                user.save()
+                is_key = True
+            elif 'nickname' in request_data.keys():
+                user.nickname = request_data['nickname']
+                user.save()
+            else:
+                result = Return_Module.ReturnPattern.success_text('update fail profile',result=False)
+                return Response(result)
 
         # serializers = MyUserSerializer(user)
         result = Return_Module.ReturnPattern.success_text('update success profile',result=True)
         return Response(result)
+
+
 
 
     def delete(self, request, format=None):
