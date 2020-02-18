@@ -100,7 +100,7 @@ class PostDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         # fields = ('user',)
-        exclude = ('modify_date','is_active','problem','report_date','report')
+        exclude = ('modify_date','is_active','problem')
 #################################################
 
 

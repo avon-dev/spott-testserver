@@ -100,9 +100,10 @@ class Post(models.Model): #!내용(conents), !작성일, !수정일, !공개여�
     created = models.DateTimeField(auto_now_add=True) #작성일
     modify_date = models.DateTimeField(null = True, blank = True) #게시글 수정일
     is_public = models.BooleanField(default = True) #공개여부
-    report = models.BooleanField(default = False) #신고여부
-    reason_for_report = models.CharField(default = "", blank = True, max_length = 200)
-    report_date = models.DateTimeField(null = True, blank = True) #신고 날짜
+    # report = models.BooleanField(default = False) #신고여부
+    # # report_choice = model.CharField()
+    # reason_for_report = models.CharField(default = "", blank = True, max_length = 200)
+    # report_date = models.DateTimeField(null = True, blank = True) #신고 날짜
     problem = models.BooleanField(default = False)
     is_active = models.BooleanField(default = True)
     hashtag = models.ManyToManyField('HashTag', through='PostTag',related_name='get_hashtag')
@@ -117,6 +118,9 @@ class Post(models.Model): #!내용(conents), !작성일, !수정일, !공개여�
         return mark_safe('<img src="%s" width="150" height="150" />' % (self.posts_image.url))  # Get Image url
 
         image_tag.short_description = 'Image'
+
+
+
 
 
 # class UserData(models.Model):
@@ -175,3 +179,45 @@ class Scrapt(models.Model):
 
     # def __str__(self):
     #     return self.user
+
+
+
+
+# def set_userFK_report(uuid):
+#     return User.objects.get(user_uid = uuid)
+#
+DEFAULT_TEST_MODEL_PK = -1
+
+class Report(models.Model):
+    REASON_CHOICES = (
+        (0, '기타'),
+        (1, '스팸'),
+        (2, '욕설 및 비방'),
+        (3, '음란물'),
+        (4, '무단도용'),
+    )
+
+    reporter = models.ForeignKey(User, on_delete=models.DO_NOTHING, to_field="user_uid", blank = True, null = True , related_name="%(app_label)s_%(class)s_reporter_related")
+    post_owner = models.CharField(default = "null",max_length = 200)
+    comment_owner = models.CharField(default = "null",max_length = 200)
+    post = models.ForeignKey(Post, on_delete=models.DO_NOTHING, blank = True, \
+    null = True, related_name="%(app_label)s_%(class)s_post_related")
+
+    comment = models.ForeignKey(Comment, on_delete=models.DO_NOTHING, blank = True,\
+    null = True, related_name="%(app_label)s_%(class)s_comment_related")
+
+    post_url = models.CharField(default = "null",max_length = 200)
+    post_caption = models.TextField(default = "null", verbose_name = '내용') #내용
+    comment_contents = models.TextField(default = "null",verbose_name = "댓글")
+    reason = models.IntegerField(default = -1, choices = REASON_CHOICES)
+    detail = models.CharField(default = "", max_length = 251)
+    created_date= models.DateTimeField(auto_now_add=True) #신고 날짜
+
+
+    def __str__(self):
+        return f"id: {str(self.id)} reason: {self.get_reason_display()}"
+
+    def image_post(self):
+        return mark_safe('<img src="%s" width="150" height="150" />' % (self.post_url))  # Get Image url
+
+        image_tag.short_description = 'Image'

@@ -41,7 +41,7 @@ class PostViewSet(viewsets.ViewSet):
         string = request.headers["Authorization"]
         decodedPayload = jwt.decode(string[4:],None,None)
         try:
-            posts = Post.objects.get(is_public = True, problem = False, is_active = True, pk = pk)
+            posts = Post.objects.get(problem = False, is_active = True, pk = pk)
         except Exception as e:
             result = Return_Module.ReturnPattern.success_text\
             ("posts_get fail",result=False)
@@ -280,19 +280,3 @@ class PostViewSet(viewsets.ViewSet):
     #     # asd = request_data["text"]
     #     # file = request.FILES['back_image'].content_type = 'image/jpeg'
     #     return Response("success", status=status.HTTP_201_CREATED)
-
-
-
-
-class ProblemPostView(APIView):
-
-#포스트 넘버만 받아서 해당 게시물 신고
-    permission_classes = (IsAuthenticated,)
-    def patch(self, request, pk, format=None):
-
-        try:
-            post = Post.objects.filter(pk=pk).update(problem = request_data['problem'])
-        except Exception as e:
-            return Response("실패")
-
-        return Response("성공")

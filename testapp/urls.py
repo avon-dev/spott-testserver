@@ -11,6 +11,7 @@ from testapp.assemble_view import comment_views
 from testapp.assemble_view import user_views
 from testapp.assemble_view import tag_views
 from testapp.assemble_view import search_views
+from testapp.assemble_view import report_views
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework.urlpatterns import format_suffix_patterns
@@ -47,5 +48,6 @@ urlpatterns = [
     path('posts/<int:post_pk>/comment', comment_views.CommentListView.as_view()),
     path('posts/<int:post_pk>/comment/<int:pk>', comment_views.CommentView.as_view()),
     path('search', search_views.SearchView.as_view()),
+    path('report', report_views.ReportView.as_view()),
 ]
 # urlpatterns = format_suffix_patterns(urlpatterns)
