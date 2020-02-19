@@ -92,13 +92,17 @@ class CommentListView(APIView):
         begin_item = page
         last_index = page + 21
         # print(craeted_time)
-        comment = Comment.objects.filter(is_active = True,\
-        post_id = post_pk).\
+        # exclude(id__in= report).
+        comment = Comment.objects.all()
+        report = Report.objects.filter(reporter_id = decodedPayload['id'],comment__in = comment, handling = 3).values('comment_id')
+        comment = comment.filter(is_active = True,\
+        post_id = post_pk, is_problem = False).exclude(id__in= report).\
         order_by('-id')[begin_item:last_index]\
         if craeted_time == ""\
-        else Comment.objects.filter(is_active = True,\
+        else comment.filter(is_active = True,\
         post_id = post_pk,\
-        created__lte=craeted_time).order_by('-id')[begin_item:last_index]
+        created__lte=craeted_time, is_problem = False).exclude(id__in= report).\
+        order_by('-id')[begin_item:last_index]
 
         comment_obj_cached = comment
 

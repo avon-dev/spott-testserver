@@ -42,10 +42,10 @@ class UserAdmin(admin.ModelAdmin):
 # comment = models.ManyToManyField('User', through='Comment',related_name='get_comment')
 # scrap_users = models.ManyToManyField('User', through = 'Scrapt',related_name= 'get_scrap')
 class PostsAdmin(admin.ModelAdmin):
-    list_display = ['image_tag','pk', 'contents', 'views','problem', 'is_active']
+    list_display = ['posts_image','image_tag','pk', 'contents', 'views','problem', 'is_active']
     list_display_links = ['pk', 'contents', 'views', 'problem', 'is_active']
-    list_filter = ['problem','contents']
-    search_fields = ['report']
+    list_filter = ['problem','is_active']
+    search_fields = ['id','contents',]
     date_hierarchy = 'created'
     readonly_fields = ['user', 'posts_image', 'back_image', 'latitude', 'longitude', 'contents', 'modify_date']
     actions = (change,)
@@ -62,13 +62,67 @@ class PostsAdmin(admin.ModelAdmin):
 
 
 class ReportAdmin(admin.ModelAdmin):
-    list_display = ['image_post','reporter', 'post_owner', 'comment_owner', 'post', 'comment','post_caption','comment_contents','reason','detail']
+    list_display = ['image_post','reporter', 'post_owner', 'comment_owner', 'post','post_caption','detail','comment_contents','handling']
     # list_display_links = ['pk', 'contents', 'views', 'problem', 'is_active']
-    list_filter = ['reason']
+    list_filter = ['reason','handling']
     search_fields = ['post_owner', 'comment_owner', 'post_owner', 'detail', 'post_caption','comment_contents' ]
     date_hierarchy = 'created_date'
     # readonly_fields = ['user', 'posts_image', 'back_image', 'latitude', 'longitude', 'contents', 'modify_date']
-    actions = (change,)
+    actions = ('action_problem','action_no_problem')
+
+    def action_problem(modeladmin, request, queryset):
+        print(f"asdasdasdasdasd{request}")
+        post_set = Post.objects.all()
+        comment_set = Comment.objects.all()
+        for obj in queryset:
+            obj.handling = True
+            obj.save()
+            if not obj.comment:
+                post_obj = post_set.get(id = obj.post.id)
+                post_obj.problem = True
+                post_obj.save()
+            else:
+                comment_obj = comment_set.get(id = obj.comment.id)
+                comment_obj.is_problem = True
+                comment_obj.save()
+        messages.success(request, "부적절 게시글 신고 처리 완료")
+
+    def action_no_problem(modeladmin, request, queryset):
+        print(f"asdasdasdasdasd{request}")
+        post_set = Post.objects.all()
+        comment_set = Comment.objects.all()
+        for obj in queryset:
+            if not obj.comment:
+                post_obj = post_set.get(id = obj.post.id)
+                obj.handling = 2
+                post_obj.problem = False
+                post_obj.save()
+            else:
+                comment_obj = comment_set.get(id = obj.comment.id)
+                comment_obj.is_problem = False
+                obj.handling = 4
+                comment_obj.save()
+            obj.save()
+        messages.success(request, "문제 없는 게시물 신고 처리 완료")
+
+
+    def get_actions(self, request):
+        actions = super().get_actions(request)
+        if 'delete_selected' in actions:
+            del actions['delete_selected']
+        return actions
+
+    # def is_locked(self, obj):  # Get Image url
+    #     yes_icon = mark_safe('<img src="/static/admin/img/icon-yes.svg" alt="True"/>')
+    #     no_icon = mark_safe('<img src="/static/admin/img/icon-no.svg" alt="False"/>')
+    #     obj.handling = not obj.handling
+    #     obj.save()
+    #     if obj.handling:
+    #         return mark_safe('<a target="_blank" href="%s/change/">%s</a>' % (obj.pk, yes_icon))
+    #     else:
+    #         return mark_safe('<a target="_blank" href="%s/change/">%s</a>' % (obj.pk, no_icon))
+    # is_locked.allow_tags = True
+    # is_locked.short_description = 'Locked'
 
     # def change(modeladmin, request, queryset):
     #     # queryset.update(views = 1)
@@ -78,7 +132,14 @@ class ReportAdmin(admin.ModelAdmin):
     #     user.nickname = 'asdasd'
     #     user.save()
     #     messages.success(request, "배송상태로 변경")
-
+def change(modeladmin, request, queryset):
+    # queryset.update(views = 1)
+    print(str(request))
+    print(str(queryset))
+    user = User.objects.get(email = 'baek5@seunghyun.com')
+    user.nickname = 'asdasd'
+    user.save()
+    messages.success(request, "배송상태로 변경")
 
 
 admin.site.register(User, UserAdmin)

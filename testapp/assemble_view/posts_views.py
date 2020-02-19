@@ -38,51 +38,63 @@ class PostViewSet(viewsets.ViewSet):
         return Response(result,status=status.HTTP_200_OK)
 
     def retrieve(self, request, pk=None):
+        result_dict = {"success":12000,"report":12001,"failed 404":14040}
         string = request.headers["Authorization"]
         decodedPayload = jwt.decode(string[4:],None,None)
         try:
             posts = Post.objects.get(problem = False, is_active = True, pk = pk)
         except Exception as e:
             result = Return_Module.ReturnPattern.success_text\
-            ("posts_get fail",result=False)
+            ("posts_get fail",result=result_dict['failed 404'])
             return Response(result, status = status.HTTP_404_NOT_FOUND)
-
-        serializers = PostDetailSerializer(posts)
-        user = User.objects.get(is_active = True, user_uid = decodedPayload["id"])
-        print("posts" + str(posts))
-        print("serial" + str(serializers.data))
-        comment_count = len(serializers.data['comment'])
-
-        try:
-            like = PostLike.objects.get(post = posts, user = user)
-        # success
-        except PostLike.DoesNotExist:
-            like_checked = False
+        report_all = Report.objects.all()
+        comment = Comment.objects.filter(post = posts)
+        report_comment = report_all.filter(reporter_id = decodedPayload['id'],comment__in = comment, handling = 3).values('comment_id')
+        report_post = report_all.filter(reporter_id = decodedPayload['id'], post = posts, handling = 1)
+        if report_post:
+            result = Return_Module.ReturnPattern.success_text\
+            ("reported posts",result = result_dict["report"])
+            return Response(result)
         else:
-            like_checked = True
+            serializers = PostDetailSerializer(posts)
+            user = User.objects.get(is_active = True, user_uid = decodedPayload["id"])
+            # print("posts" + str(posts))
+            # print("serial" + str(serializers.data))
+            comment_count = len(Comment.objects.filter(is_active = True,\
+            post_id = pk, is_problem = False).exclude(id__in= report_comment))
 
-        try:
-            scrap = Scrapt.objects.get(post = posts, user = user)
-        # success
-        except Scrapt.DoesNotExist:
-            scrap_checked = False
-        else:
-            scrap_checked = True
+            try:
+                like = PostLike.objects.get(post = posts, user = user)
+            # success
+            except PostLike.DoesNotExist:
+                like_checked = False
+            else:
+                like_checked = True
 
-        if serializers.data['user']['user_uid'] == decodedPayload["id"]:
-            myself = True
-        else:
-            myself = False
+            try:
+                scrap = Scrapt.objects.get(post = posts, user = user)
+            # success
+            except Scrapt.DoesNotExist:
+                scrap_checked = False
+            else:
+                scrap_checked = True
 
-        serial_dumps = Return_Module.jsonDumpsLoads(self,**serializers.data)
-        serial_dumps['comment'] = comment_count
-        serial_dumps['count'] = len(serializers.data['like_user'])
-        serial_dumps['like_checked'] = like_checked
-        serial_dumps['scrap_checked'] = scrap_checked
-        serial_dumps['myself'] = myself
-        result = Return_Module.ReturnPattern.success_text\
-        ("show posts detail success",**serial_dumps)
-        return Response(result)
+            if serializers.data['user']['user_uid'] == decodedPayload["id"]:
+                myself = True
+            else:
+                myself = False
+
+            serial_dumps = Return_Module.jsonDumpsLoads(self,**serializers.data)
+            serial_dumps['comment'] = comment_count
+            serial_dumps['count'] = len(serializers.data['like_user'])
+            serial_dumps['like_checked'] = like_checked
+            serial_dumps['scrap_checked'] = scrap_checked
+            serial_dumps['myself'] = myself
+            result = Return_Module.ReturnPattern.success_text\
+            ("show posts detail success",**serial_dumps, result = result_dict["success"])
+            return Response(result)
+
+
 
 
     def create(self, request):
@@ -142,8 +154,6 @@ class PostViewSet(viewsets.ViewSet):
 
         result = Return_Module.ReturnPattern.success_text\
         ("partial_update success",result=True)
-
-
 
         print(request_data['contents'])
         try:

@@ -27,7 +27,7 @@ from django.utils.html import mark_safe
 from django.contrib.postgres.fields import JSONField
 
 class User(AbstractBaseUser, PermissionsMixin): #나중에 널 값 처리
-    user_uid = models.CharField(max_length=255, unique = True) #이메일 해싱
+    user_uid = models.CharField(max_length=255, unique = True) #이메일 해싱 삭제를 했어 lwbvv@naver.com
     email = models.EmailField(_('email address'))
     password = models.CharField(_('password'), max_length=200)
     nickname = models.CharField(max_length=150)
@@ -95,13 +95,12 @@ class Post(models.Model): #!내용(conents), !작성일, !수정일, !공개여�
     back_image = models.ImageField(upload_to = 'postb') #R
     latitude = models.FloatField() #R
     longitude = models.FloatField() #R
-    contents = models.TextField(verbose_name = '내용') #내용
+    contents = models.TextField(default = "",verbose_name = '내용') #내용
     views = models.IntegerField(default = 0)
     created = models.DateTimeField(auto_now_add=True) #작성일
     modify_date = models.DateTimeField(null = True, blank = True) #게시글 수정일
     is_public = models.BooleanField(default = True) #공개여부
     # report = models.BooleanField(default = False) #신고여부
-    # # report_choice = model.CharField()
     # reason_for_report = models.CharField(default = "", blank = True, max_length = 200)
     # report_date = models.DateTimeField(null = True, blank = True) #신고 날짜
     problem = models.BooleanField(default = False)
@@ -149,6 +148,7 @@ class PostTag(models.Model): #! !댓글, !작성일, !수정일, !삭제일, !�
 class Comment(models.Model): #! !댓글, !작성일, !수정일, !삭제일, !삭제여부
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name= 'user_comment')
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name= 'post_comment')
+    is_problem = models.BooleanField(default = False)
     contents = models.TextField(verbose_name = '내용') #내용
     created = models.DateTimeField(auto_now_add=True) #작성일
     modify_date = models.DateTimeField(null = True, blank = True) #댓글 수정일
@@ -196,21 +196,28 @@ class Report(models.Model):
         (3, '음란물'),
         (4, '무단도용'),
     )
+    HANDLING_CHOICES = (
+        (0, '신고 x'),
+        (1, '게시물 전'),
+        (2, '게시물 후'),
+        (3, '댓글 전'),
+        (4, '댓글 후'),
+    )
 
     reporter = models.ForeignKey(User, on_delete=models.DO_NOTHING, to_field="user_uid", blank = True, null = True , related_name="%(app_label)s_%(class)s_reporter_related")
     post_owner = models.CharField(default = "null",max_length = 200)
     comment_owner = models.CharField(default = "null",max_length = 200)
     post = models.ForeignKey(Post, on_delete=models.DO_NOTHING, blank = True, \
     null = True, related_name="%(app_label)s_%(class)s_post_related")
-
     comment = models.ForeignKey(Comment, on_delete=models.DO_NOTHING, blank = True,\
     null = True, related_name="%(app_label)s_%(class)s_comment_related")
 
-    post_url = models.CharField(default = "null",max_length = 200)
-    post_caption = models.TextField(default = "null", verbose_name = '내용') #내용
+    handling = models.IntegerField(default = 0,choices = HANDLING_CHOICES, verbose_name = '신고처리')
+    post_url = models.CharField(default = "null",max_length = 200, verbose_name = '이미지')
+    post_caption = models.TextField(default = "null", verbose_name = '게시물 내용') #내용
     comment_contents = models.TextField(default = "null",verbose_name = "댓글")
     reason = models.IntegerField(default = -1, choices = REASON_CHOICES)
-    detail = models.CharField(default = "", max_length = 251)
+    detail = models.TextField(default = "", verbose_name = "상세내용")
     created_date= models.DateTimeField(auto_now_add=True) #신고 날짜
 
 

@@ -29,14 +29,14 @@ class ReportView(APIView):
 
         if post_url:
             report = Report.objects.create(reporter = reporter, post = post, post_owner = post.user.email,\
-            post_url = post_url, post_caption = post_caption, reason = reason, detail = detail)
+            post_url = post_url, post_caption = post_caption, reason = reason, detail = detail, handling = 1)
             result = Return_Module.ReturnPattern.success_text\
             ("report post success",result=True)
             return Response(result)
         elif comment_contents:
             comment = Comment.objects.get(pk = request_data['comment_id'])
             report = Report.objects.create(reporter = reporter, post = post, post_owner = post.user.email,\
-            comment_owner = comment.user.email, comment = comment ,comment_contents = comment_contents ,reason = reason, detail = detail)
+            comment_owner = comment.user.email, comment = comment ,comment_contents = comment_contents ,reason = reason, detail = detail, handling = 3)
             result = Return_Module.ReturnPattern.success_text\
             ("comment post success",result=True)
             return Response(result)
