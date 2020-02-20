@@ -21,9 +21,9 @@ class PostViewSet(viewsets.ViewSet):
         last_index = page + 21
 
         #생성일 넘겨주는 부분
-        posts_obj = Post.objects.filter(is_active = True, problem = False, is_public = True).order_by('-id')[begin_item:last_index]\
+        posts_obj = Post.objects.filter(handling = 22001, is_active = True, problem = False, is_public = True).order_by('-id')[begin_item:last_index]\
                     if craeted_time == ""\
-                    else Post.objects.filter(is_active = True, problem = False, is_public = True, created__lte=craeted_time).order_by('-id')[begin_item:last_index]
+                    else Post.objects.filter(handling = 22001, is_active = True, problem = False, is_public = True, created__lte=craeted_time).order_by('-id')[begin_item:last_index]
 
         posts_obj_cached = posts_obj
 
@@ -112,7 +112,6 @@ class PostViewSet(viewsets.ViewSet):
         posts_image = request.FILES['posts_image'],\
         back_image = request.FILES['back_image'],\
         is_public = True)
-
         result = Return_Module.ReturnPattern.success_text\
         ("create success",success=True)
 

@@ -41,6 +41,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 class aaa(APIView):
     permission_classes = []
     def post(self, request, format=None):
-        a = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNTg2ODY3MjI1LCJqdGkiOiJmNWFkMDU1NjU4Mzc0MmIzYjQyMWY4MGM4ZTg3NzRjOSIsImlkIjoidXNlcjhAbmF2ZXIuY29tIn0.5tJdXcBDl_AIyjzmu9ZHfrvHtugmRi-_NFUsNDKdvic"
+        # a = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNTg2ODY3MjI1LCJqdGkiOiJmNWFkMDU1NjU4Mzc0MmIzYjQyMWY4MGM4ZTg3NzRjOSIsImlkIjoidXNlcjhAbmF2ZXIuY29tIn0.5tJdXcBDl_AIyjzmu9ZHfrvHtugmRi-_NFUsNDKdvic"
+        b = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNTg4MjYwNjg4LCJqdGkiOiI3ODk2ZTVmNTYxMGY0OTBiOTQzNzBjYjNjNzBjZjI3MiIsImlkIjoidXNlcjNAbmF2ZXIuY29tIn0.Ao_nVTPMxxz0L4lHMAQT5eljrYRGAD35qgqWDI4FONg"
         # jsond = json.dumps(a)
-        return Response(a)
+        return Response(b)

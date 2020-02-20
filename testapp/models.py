@@ -89,7 +89,16 @@ class User(AbstractBaseUser, PermissionsMixin): #나중에 널 값 처리
 
 
 class Post(models.Model): #!내용(conents), !작성일, !수정일, !공개여부(public),
-                            # !게시물 신고 여부, !신고 날짜, 부적절 게시물 여부(problem), !삭제여부, !삭제 날짜
+                        # !게시물 신고 여부, !신고 날짜, 부적절 게시물 여부(problem), !삭제여부, !삭제 날짜
+
+    HANDLING_CHOICES = (
+        (22000, '검사 전'),
+        (22001, '사진 통과'),
+        (22002, '잘못된 위치정보'),
+        (22003, '부적절한 사진'),
+        (22004, '부적절한 내용'),
+    )
+
     user = models.ForeignKey(User,on_delete=models.CASCADE, related_name= 'get_user') #get_post로 변경
     posts_image = models.ImageField(upload_to = 'post') #R
     back_image = models.ImageField(upload_to = 'postb') #R
@@ -100,9 +109,7 @@ class Post(models.Model): #!내용(conents), !작성일, !수정일, !공개여�
     created = models.DateTimeField(auto_now_add=True) #작성일
     modify_date = models.DateTimeField(null = True, blank = True) #게시글 수정일
     is_public = models.BooleanField(default = True) #공개여부
-    # report = models.BooleanField(default = False) #신고여부
-    # reason_for_report = models.CharField(default = "", blank = True, max_length = 200)
-    # report_date = models.DateTimeField(null = True, blank = True) #신고 날짜
+    handling = models.IntegerField(default = 22000 ,choices = HANDLING_CHOICES ,verbose_name = '검사')
     problem = models.BooleanField(default = False)
     is_active = models.BooleanField(default = True)
     hashtag = models.ManyToManyField('HashTag', through='PostTag',related_name='get_hashtag')
@@ -228,3 +235,22 @@ class Report(models.Model):
         return mark_safe('<img src="%s" width="150" height="150" />' % (self.post_url))  # Get Image url
 
         image_tag.short_description = 'Image'
+
+
+class Notice(models.Model):
+    KIND_CHOICES = (
+        (22001, '사진 반려'),
+        (22002, '사진 통과'),
+        (22003, '댓글 남김'),
+        (22004, '규칙 위반 게시물'),
+        (22005, '규칙 위반 댓글'),
+    )
+
+    receiver = models.ForeignKey(User, on_delete=models.CASCADE, to_field="id",related_name="%(app_label)s_%(class)s_receiver_related")
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, blank = True, null = True, to_field="id",related_name="%(app_label)s_%(class)s_post_related")
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, blank = True, null = True, to_field="id",related_name="%(app_label)s_%(class)s_comment_related")
+    report = models.ForeignKey(Report, on_delete=models.CASCADE, blank = True, null = True, to_field="id",related_name="%(app_label)s_%(class)s_report_related")
+    reason_detail = models.TextField(default = "") #상세 사유
+    kind = models.IntegerField(choices = KIND_CHOICES, verbose_name = '알림 종류')
+    confirmation = models.BooleanField(default = False, verbose_name = '확인')
+    created_date= models.DateTimeField(auto_now_add=True)

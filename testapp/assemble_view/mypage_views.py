@@ -63,8 +63,8 @@ class UserMypageViewSet(APIView):
 
         myself = True if decodedPayload['id'] == user.user_uid else False #불러올 계정과 로그인 유저가 같으면 true 다르면 false 반환
 
-        post = Post.objects.filter(is_active = True, problem = False, user = user).order_by('-id')\
-        if myself else Post.objects.filter(is_public = True, is_active = True, problem = False, user = user).order_by('-id')
+        post = Post.objects.filter(handling = 22001, is_active = True, problem = False, user = user).order_by('-id')\
+        if myself else Post.objects.filter(is_check = True, is_public = True, is_active = True, problem = False, user = user).order_by('-id')
 
         post_serializers = MypageSerializer(post,many=True)
         user_serializers = MyUserSerializer(user)

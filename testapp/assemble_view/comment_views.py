@@ -4,6 +4,8 @@ from settings import settings
 from pytz import timezone
 from django.core.serializers.json import DjangoJSONEncoder
 
+
+
 class CommentView(APIView):
     permission_classes = (IsAuthenticated,)
 
@@ -79,13 +81,13 @@ class CommentView(APIView):
 class CommentListView(APIView):
     permission_classes = (IsAuthenticated,)
 
-
-
+    actions = {"notice":9999,"basic":9998}
+#게시글 아이디, 유저 닉네임, 유저 이미지,
     def get(self, request, post_pk, format=None):
         data = Return_Module.string_to_dict(request.GET)
         page = data['page'] #클라이언트에서 보내주는 page count
         craeted_time = data['created_time'] #클라이언트에서 보내주는 최신 게시물 생성 날짜
-
+        action = data['action'] #클라이언트에서 보내주는 page count
         string = request.headers["Authorization"]
         decodedPayload = jwt.decode(string[4:],None,None)
         #페이징
@@ -133,10 +135,21 @@ class CommentListView(APIView):
             else:
                 comment_dict[count]['myself'] = False
             count = count + 1
-        result_dict = {"payload":{"items":comment_dict, "created_time":created_time, "pageable":pageable}}
-        result = json.dumps(result_dict,cls=DjangoJSONEncoder)
-        # print(dict)
-        return Response(result)
+        if action == self.actions['notice']:
+            post = Post.objects.filter(id=post_pk)
+            notice_list = list(post.values('user', 'contents', "created"))
+            notice_list[0]['user_nickname'] = post[0].user.nickname
+            notice_list[0]['user_profile_image'] = post[0].user.profile_image.url
+            # notice_list
+            result_dict = {"payload":{"items":comment_dict, "created_time":created_time, "pageable":pageable, "notice_data":notice_list[0]}}
+            result = json.dumps(result_dict,cls=DjangoJSONEncoder)
+            # print(dict)
+            return Response(result)
+        else:
+            result_dict = {"payload":{"items":comment_dict, "created_time":created_time, "pageable":pageable}}
+            result = json.dumps(result_dict,cls=DjangoJSONEncoder)
+            # print(dict)
+            return Response(result)
 
 
     def post(self, request, post_pk, format=None):
@@ -148,7 +161,8 @@ class CommentListView(APIView):
 
         # success
         comment = Comment.objects.create(post = post, user=user, contents=request_data['caption'])
-
+        if not post.user.email ==decodedPayload['id']:
+            Notice.objects.create(receiver =post.user, comment = comment, kind = 22003)
         result = Return_Module.ReturnPattern.success_text\
         ("success create",result=True)
         return Response(result)
