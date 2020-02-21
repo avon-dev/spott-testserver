@@ -48,8 +48,9 @@ class NoticeView(APIView):
                 notice_list[count]['post_image'] = obj.report.post_url
             else:
                 notice_list[count]['reason'] = obj.report.get_reason_display()
+            notice_list[count]['confirmation'] = True
             count += 1
-
+        Notice.objects.filter(receiver = user).update(confirmation = True)
 
         pageable = False if len(notice_list) < 21 else True
 
@@ -75,22 +76,34 @@ class NoticeDetailView(APIView):
             image_url = report.post_url
             caption = report.post_caption
             result = Return_Module.ReturnPattern.success_text\
-            ("show mypage", image_url = image_url, caption = caption)
+            ("show notice", image_url = image_url, caption = caption)
             return Response(result)
         elif kind == actions['return_posts']:
             post = Post.objects.get(id = notice.post.id)
             image_url = post.posts_image.url
             caption = post.contents
             result = Return_Module.ReturnPattern.success_text\
-            ("show mypage", image_url = image_url, caption = caption)
+            ("show notice", image_url = image_url, caption = caption)
             return Response(result)
         else:
             report = Report.objects.get(id = notice.report.id)
             caption = report.comment_contents
             result = Return_Module.ReturnPattern.success_text\
-            ("show mypage", caption = caption)
+            ("show notice", caption = caption)
             return Response(result)
 
+    def delete(self, request, pk, format=None):
+        try:
+            notice = Notice.objects.get(pk = pk)
+        except Exception as e:
+            result = Return_Module.ReturnPattern.success_text\
+            ("delete fail")
+            return Response(result, status = status.HTTP_404_NOT_FOUND)
+        else:
+            notice.delete()
+            result = Return_Module.ReturnPattern.success_text\
+            ("delete success", result = True)
+            return Response(result)
 
 
 

@@ -116,7 +116,10 @@ class ReportAdmin(admin.ModelAdmin):
     list_filter = ['reason','handling']
     search_fields = ['post_owner', 'comment_owner', 'post_owner', 'detail', 'post_caption','comment_contents' ]
     date_hierarchy = 'created_date'
-    inlines = [VillainInline]
+    # fields = (('reporter','post_owner'),'comment_owner',)
+    # raw_id_fields = ("post",)
+    save_on_top = True #저장 버튼 윗 쪽에도 생성
+    autocomplete_fields = ['post']
     def save_model(self, request, obj, form, change):
         post_obj = Post.objects.get(id = obj.post.id)
         post_obj.problem = True

@@ -18,11 +18,17 @@ class MypageViewSet(APIView):
         post_serializers = MypageSerializer(post, many = True)
         user_serializers = MyUserSerializer(user)
 
+        notice = Notice.objects.filter(receiver = user.id, confirmation = False)
 
+        #Notice 테이블에 데이터가 있으면 확인을 안 한 거다 컨펌 하지 않았으니 false
+        is_confirmation = notice.count()
         result = Return_Module.ReturnPattern.success_text\
-        ("show mypage", user = user_serializers.data, posts = post_serializers.data, myself = True)
+        ("show mypage", user = user_serializers.data, posts = post_serializers.data,\
+         myself = True, is_confirmation = is_confirmation)
         return Response(result)
 
+
+#게시물 공게 비공개 설정
     def patch(self, request, format=None):
         string = request.headers["Authorization"]
         decodedPayload = jwt.decode(string[4:],None,None)
@@ -64,7 +70,7 @@ class UserMypageViewSet(APIView):
         myself = True if decodedPayload['id'] == user.user_uid else False #불러올 계정과 로그인 유저가 같으면 true 다르면 false 반환
 
         post = Post.objects.filter(handling = 22001, is_active = True, problem = False, user = user).order_by('-id')\
-        if myself else Post.objects.filter(is_check = True, is_public = True, is_active = True, problem = False, user = user).order_by('-id')
+        if myself else Post.objects.filter(handling = 22001, is_public = True, is_active = True, problem = False, user = user).order_by('-id')
 
         post_serializers = MypageSerializer(post,many=True)
         user_serializers = MyUserSerializer(user)

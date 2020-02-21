@@ -212,8 +212,8 @@ class Report(models.Model):
     )
 
     reporter = models.ForeignKey(User, on_delete=models.DO_NOTHING, to_field="user_uid", blank = True, null = True , related_name="%(app_label)s_%(class)s_reporter_related")
-    post_owner = models.CharField(default = "null",max_length = 200)
-    comment_owner = models.CharField(default = "null",max_length = 200)
+    post_owner = models.CharField(default = "null",max_length = 200) #삭제해도 됨
+    comment_owner = models.CharField(default = "null",max_length = 200) #삭제해도 됨
     post = models.ForeignKey(Post, on_delete=models.DO_NOTHING, blank = True, \
     null = True, related_name="%(app_label)s_%(class)s_post_related")
     comment = models.ForeignKey(Comment, on_delete=models.DO_NOTHING, blank = True,\
