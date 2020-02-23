@@ -27,13 +27,13 @@ class EmailAuthentication(APIView):
         try:
             email = request_data["email"]
         except KeyError as e:
-            dict = Error_Module.ErrorHandling.none_feild(feild_name,**request.GET.dict())
+            dict = Error_Module.ErrorHandling.none_feild('email',**request.GET.dict())
             result = Return_Module.ReturnPattern.error_text(**dict)
             return Response(result,status = status.HTTP_400_BAD_REQUEST)
         else:
             #이메일 패턴이 아닐경우 오류 반환
             if Email_Module.is_valid(email):
-                dict = {feild_name:"Not an email pattern"}
+                dict = {'email':"Not an email pattern"}
                 result = Return_Module.ReturnPattern.error_text(**dict)
                 return Response(result,status = status.HTTP_400_BAD_REQUEST)
         # print(self.request_data_key)

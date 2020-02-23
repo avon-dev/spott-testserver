@@ -4,7 +4,6 @@ class Scrap(APIView):
     permission_classes = (IsAuthenticated,)
 
 
-#좋아요 상태인지 판별할 때
     def get(self, request, pk, format=None):
         post = Post.objects.get(pk = pk)
         string = request.headers["Authorization"]

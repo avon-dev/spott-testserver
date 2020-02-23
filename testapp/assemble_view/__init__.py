@@ -26,7 +26,5 @@ from function import random as ran
 from function import email as Email_Module
 from function import errors as Error_Module
 from function import returns as Return_Module
+from function import request as req
 from django.core.exceptions import ObjectDoesNotExist
-
-
-request_bundle = "sending"
