@@ -4,10 +4,10 @@ from .returns import ReturnPattern
 
 class ErrorHandling:
 
-    def none_feild(*keynames,**request):
+    def none_feild(keyname_list,request_list):
         dict ={}
-        for key in keynames: #인자값으로 받은 keynames을 하나씩 대입
-            if not key in request.keys(): #리퀘스트의 키값에 키값이 있는지 확인
+        for key in keyname_list: #인자값으로 받은 keynames을 하나씩 대입
+            if not key in request_list: #리퀘스트의 키값에 키값이 있는지 확인
                 dict[key] = "%s field is required" %key
         return dict
 
@@ -16,4 +16,4 @@ class ErrorHandling:
         message = "message"
         dict[message] = "Send it in a bundle name '%s'" %bundle_name
 
-        return ReturnPattern.error_text(**dict)
+        return ReturnPattern.error_text(dict)

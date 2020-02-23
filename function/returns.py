@@ -51,7 +51,7 @@ def jsonDumpsLoads(self,*arg,**kw):
 
 class ReturnPattern:
 
-    def error_text(**dict):
+    def error_text(dict):
         error = {"error":dict}
         result = json.dumps(error)
         return result

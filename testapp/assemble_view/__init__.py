@@ -27,4 +27,5 @@ from function import email as Email_Module
 from function import errors as Error_Module
 from function import returns as Return_Module
 from function import request as req
+from function import string as string_get
 from django.core.exceptions import ObjectDoesNotExist
