@@ -11,16 +11,16 @@ class MypageViewSet(APIView):
     permission_classes = (IsAuthenticated,)
     request_data_key = ['is_public']
     def get(self, request, format=None):
-        string = request.headers["Authorization"]
-        decodedPayload = jwt.decode(string[4:],None,None)
-        user = User.objects.get(is_active = True, user_uid = decodedPayload["id"])
+        # string = request.headers["Authorization"]
+        # decodedPayload = jwt.decode(string[4:],None,None)
+        # user = User.objects.get(is_active = True, user_uid = decodedPayload["id"])
+        user = orm.get_myself(self, request)
         post = Post.objects.filter(problem = False, is_active = True, user = user).order_by('-id')
         post_serializers = MypageSerializer(post, many = True)
         user_serializers = MyUserSerializer(user)
 
         notice = Notice.objects.filter(receiver = user.id, confirmation = False)
 
-        #Notice 테이블에 데이터가 있으면 확인을 안 한 거다 컨펌 하지 않았으니 false
         is_confirmation = notice.count()
         result = Return_Module.ReturnPattern.success_text\
         ("show mypage", user = user_serializers.data, posts = post_serializers.data,\
@@ -30,12 +30,12 @@ class MypageViewSet(APIView):
 
 #게시물 공게 비공개 설정
     def patch(self, request, format=None):
-        string = request.headers["Authorization"]
-        decodedPayload = jwt.decode(string[4:],None,None)
         request_data = Return_Module.string_to_dict(request.data) #sending으로 묶여서 오는 파라미터 데이터 추출
         print(str(request_data))
         print(decodedPayload["id"])
-        user = User.objects.get(is_active = True, user_uid = decodedPayload["id"])
+
+        user = orm.get_myself(self, request)
+
         user.is_public = request_data[self.request_data_key[0]]
         post = Post.objects.filter(user = user).update(is_public = request_data[self.request_data_key[0]])
         post_r = Post.objects.filter(user = user)
@@ -58,33 +58,31 @@ class UserMypageViewSet(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request, pk, format=None):
-        string = request.headers["Authorization"]
-        decodedPayload = jwt.decode(string[4:],None,None)
+        my_email = req.my_email(self, request)
         request_data = Return_Module.string_to_dict(request.GET) #sending으로 묶여서 오는 파라미터 데이터 추출
-        action = request_data['action']
+        action = request_data[req.action]
         action_search = 1201
         action_user_mypage = 1202
-        user = User.objects.get(is_active = True, pk = pk)
+
+        user = orm.get_user_pk(self, pk)
 
 
-        myself = True if decodedPayload['id'] == user.user_uid else False #불러올 계정과 로그인 유저가 같으면 true 다르면 false 반환
+        myself = True if my_email == user.user_uid else False #불러올 계정과 로그인 유저가 같으면 true 다르면 false 반환
 
-        post = Post.objects.filter(handling = 22001, is_active = True, problem = False, user = user).order_by('-id')\
-        if myself else Post.objects.filter(handling = 22001, is_public = True, is_active = True, problem = False, user = user).order_by('-id')
+        post = Post.objects.filter(handling = Post.no_problem, is_active = True, problem = False, user = user).order_by('-id')\
+        if myself else Post.objects.filter(handling = Post.no_problem, is_public = True, is_active = True, problem = False, user = user).order_by('-id')
 
         post_serializers = MypageSerializer(post,many=True)
         user_serializers = MyUserSerializer(user)
 
         # result = Return_Module.ReturnPattern.success_text("Send success",result=True,code=random_number)
         result = Return_Module.ReturnPattern.success_text\
-        ("show user mypage", user = user_serializers.data, posts = post_serializers.data,myself = myself)
+        ("show user mypage", user = user_serializers.data, posts = post_serializers.data, myself = myself)
         # dict = {"payload":{"user":user_serializers.data,"posts":post_serializers.data},"message":"success"}
         # result = json.dumps(dict)
 
         if action == action_search:
-            string = request.headers["Authorization"]
-            decodedPayload = jwt.decode(string[4:],None,None)
-            user = User.objects.get(user_uid = decodedPayload['id'])
+            user = orm.get_myself(self, request)
             recent_search_word = user.recent_search
             print(decodedPayload['id'])
             count = 0

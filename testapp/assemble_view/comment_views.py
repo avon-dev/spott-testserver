@@ -23,43 +23,38 @@ class CommentView(APIView):
         post = Post.objects.get(pk = post_pk) #해당 포스트 가져오기
 
         #접속한 유저의 id 가져오기
-        string = request.headers["Authorization"]
-        decodedPayload = jwt.decode(string[4:],None,None)
-        user = User.objects.get(user_uid = decodedPayload['id'])
+        user = req.get_myself(self, request)
 
-        result = Return_Module.ReturnPattern.success_text\
-        ("success delete",result=True)
+        result = Return_Module.ReturnPattern.success_dict\
+        (string_get.successful_delete,result=True)
 
         try:
             comment = Comment.objects.get(pk = pk, user_id = user.id)
         except ObjectDoesNotExist:
-            result = json.loads(result)
-            result['message'] = "impossible deleted"
+            result['message'] = string_get.impossible_deleted
             result['payload']['result'] = False
             result = json.dumps(result)
             return Response(result)
         else:
             comment.is_active = False
             comment.save()
-
+            result = json.dumps(result)
             return Response(result)
 
 
     def patch(self, request, post_pk, pk, format=None):
         request_data = Return_Module.string_to_dict(request.data)
         print(request_data)
-        string = request.headers["Authorization"]
-        decodedPayload = jwt.decode(string[4:],None,None)
+        my_email = req.my_email(self, request)
 
-        result = Return_Module.ReturnPattern.success_text\
-        ("success update",result=True)
+        result = Return_Module.ReturnPattern.success_dict\
+        (string_get.impossible_update,result=True)
 
         try:
-            user = User.objects.get(user_uid = decodedPayload['id'])
+            user = User.objects.get(email = my_email)
             comment = Comment.objects.get(pk = pk, user_id = user.id)
         except ObjectDoesNotExist:
-            result = json.loads(result)
-            result['message'] = "can not update"
+            result['message'] = string_get.update_failed
             result['payload']['result'] = False
             result = json.dumps(result)
             return Response(result)
@@ -81,22 +76,21 @@ class CommentView(APIView):
 class CommentListView(APIView):
     permission_classes = (IsAuthenticated,)
 
-    actions = {"notice":9999,"basic":9998}
 #게시글 아이디, 유저 닉네임, 유저 이미지,
     def get(self, request, post_pk, format=None):
         data = Return_Module.string_to_dict(request.GET)
         page = data['page'] #클라이언트에서 보내주는 page count
         craeted_time = data['created_time'] #클라이언트에서 보내주는 최신 게시물 생성 날짜
         action = data['action'] #클라이언트에서 보내주는 page count
-        string = request.headers["Authorization"]
-        decodedPayload = jwt.decode(string[4:],None,None)
+        my_email = req.my_email(self, request)
         #페이징
         begin_item = page
         last_index = page + 21
         # print(craeted_time)
         # exclude(id__in= report).
         comment = Comment.objects.all()
-        report = Report.objects.filter(reporter_id = decodedPayload['id'],comment__in = comment, handling = 3).values('comment_id')
+        report = Report.objects.filter(reporter_id = my_email,comment__in = comment, handling = 3).values('comment_id')
+
         comment = comment.filter(is_active = True,\
         post_id = post_pk, is_problem = False).exclude(id__in= report).\
         order_by('-id')[begin_item:last_index]\
@@ -111,14 +105,16 @@ class CommentListView(APIView):
         pageable = False if comment_obj_cached.count() < 21 else True
 
         try:
-            comment_obj_cached[0].created
+            comment_created_time = comment_obj_cached[0].created
 
         except IndexError:
             result = Return_Module.ReturnPattern.success_text\
             ("comment blank",result=False)
             return Response(result)
 
-        created_time = str(comment_obj_cached[0].created) if craeted_time == "" else craeted_time
+
+        #데이터 베이스 안의 정보와 비교가 안 돼 str을 이용해 스트링으로 변환을 해 주었다.
+        created_time = str(comment_created_time) if craeted_time == "" else craeted_time
 
         # comment = Comment.objects.filter(user = post.comment.)
 
@@ -135,32 +131,31 @@ class CommentListView(APIView):
             else:
                 comment_dict[count]['myself'] = False
             count = count + 1
-        if action == self.actions['notice']:
+        if action == req.notice_to_comment:
             post = Post.objects.filter(id=post_pk)
             notice_list = list(post.values('user', 'contents', "created"))
             notice_list[0]['user_nickname'] = post[0].user.nickname
             notice_list[0]['user_profile_image'] = post[0].user.profile_image.url
             # notice_list
-            result_dict = {"payload":{"items":comment_dict, "created_time":created_time, "pageable":pageable, "notice_data":notice_list[0]}}
-            result = json.dumps(result_dict,cls=DjangoJSONEncoder)
+            result = Return_Module.ReturnPattern.success_text\
+            ("comment blank",items = comment_dict, created_time = created_time, pageable = pageable, notice_data = notice_list[0])
+            # result = {"payload":{"items":comment_dict, "created_time":created_time, "pageable":pageable, "notice_data":notice_list[0]}}
             # print(dict)
             return Response(result)
         else:
-            result_dict = {"payload":{"items":comment_dict, "created_time":created_time, "pageable":pageable}}
-            result = json.dumps(result_dict,cls=DjangoJSONEncoder)
+            result = Return_Module.ReturnPattern.success_text\
+            ("comment blank",items = comment_dict, created_time = created_time, pageable = pageable)
             # print(dict)
             return Response(result)
 
 
     def post(self, request, post_pk, format=None):
         post = Post.objects.get(pk = post_pk)
-        token_value = request.headers["Authorization"]
-        decodedPayload = jwt.decode(token_value[4:],None,None)
-        user = User.objects.get(user_uid = decodedPayload["id"])
+        user_myself = orm.get_myself(self,request)
         request_data = Return_Module.string_to_dict(request.data)
 
         # success
-        comment = Comment.objects.create(post = post, user=user, contents=request_data['caption'])
+        comment = Comment.objects.create(post = post, user=user_myself, contents=request_data['caption'])
         if not post.user.email ==decodedPayload['id']:
             Notice.objects.create(receiver =post.user, comment = comment, kind = 22003)
         result = Return_Module.ReturnPattern.success_text\

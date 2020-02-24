@@ -54,7 +54,7 @@ class ReturnPattern:
     def error_text(dict):
         error = {"error":dict}
         result = json.dumps(error)
-        return result
+        return error
 
     def success_text(message,**dict):
         success = {"payload":dict,"message":message}
@@ -66,11 +66,11 @@ class ReturnPattern:
         result = json.dumps(success, cls=DjangoJSONEncoder)
         return result
 
-    def success_test(message,**dict):
+    def success_dict(message,**dict):
         success = {"payload":dict,"message":message}
         return success
 
-    def success_list_test(message,*list):
+    def success_list_dict(message,*list):
         success = {"payload":list,"message":message}
         return success
 

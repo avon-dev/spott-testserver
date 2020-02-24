@@ -39,7 +39,7 @@ urlpatterns = [
     path('users/<int:pk>/posts', mypage_views.UserMypageViewSet.as_view()),
 
     #마이페이지 (이쪽 부분이 url이 약간 애매하다)
-    path('users/0/posts', mypage_views.MypageViewSet.as_view()),
+    path('users/my-posts', mypage_views.MypageViewSet.as_view()),
 
     #알림
     path('notice', notice_views.NoticeView.as_view()),

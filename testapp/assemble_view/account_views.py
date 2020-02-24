@@ -9,7 +9,10 @@ class EmailAuthentication(APIView):
     permission_classes = []
 
     def get(self, request, format=None):
+        user_exist = None
         random_number = ""
+
+
         # sending으로 안 묶여 있으면 에러 처리
         try:
             request_data = Return_Module.string_to_dict(request.GET) #sending 파라미터에서 value 추출해서 dict 형태로 변형
@@ -19,13 +22,13 @@ class EmailAuthentication(APIView):
             return Response(result,status = status.HTTP_400_BAD_REQUEST)
 
 
-        #필드에 이메일이 없을 경우
+        #필드에 필수 키가 있는지 확인 후 없을 경우 에러 반환
         try:
             for key in req.email_auth_req_key:
                 request_data[key]
         except KeyError as e:
-            dict = Error_Module.ErrorHandling.none_feild(req.email_auth_req_key,request_data.keys())
-            result = Return_Module.ReturnPattern.error_text(dict)
+            error_dict = Error_Module.ErrorHandling.none_feild(req.email_auth_req_key,request_data.keys())
+            result = Return_Module.ReturnPattern.error_text(error_dict)
             return Response(result,status = status.HTTP_400_BAD_REQUEST)
         else:
             email = request_data[req.email]
@@ -38,17 +41,21 @@ class EmailAuthentication(APIView):
                 return Response(result,status = status.HTTP_400_BAD_REQUEST)
 
         # print(self.request_data_key)
-        if action == req.sign_up_email_auth:
+        #가입 되지 않은  이메일 일 경우에는 false 가입 된 이메일 일 경우에는 true로 user_exist를 변경 해 주고 이 값은 분기처리시 활용
+        try:
+            user = orm.get_user_email(self, email)
+        except ObjectDoesNotExist as e:
+            user_exist = False
+        else:
+            user_exist = True
 
-            try:
-                user = User.objects.get(email=email)
-            except ObjectDoesNotExist:
+        random_number = ran.RanStrCraete.number(4) #4자리 수의 랜덤 숫자 생성
+
+        if action == req.sign_up_email_auth: #회원가입 이메일 인증 분기
+            if not user_exist:
                 print("send success")
-                random_number = ran.RanStrCraete.number(4) #4자리 수의 랜덤 숫자 생성
 
-                subject = string_get.send_email_text
-                message = string_get.auth_code_text + random_number
-                auth_email = EmailMessage(subject,message,to=[email])
+                auth_email = Email_Module.email_setting(self, string_get.send_email_text, random_number, email)
 
                 result = Return_Module.ReturnPattern.success_text\
                 ("Send success", duplication=False,code=random_number)
@@ -64,22 +71,16 @@ class EmailAuthentication(APIView):
                 ("Duplicate email", duplication=True, code=random_number)
                 return Response(result)
 
-        elif action == req.forgot_user_password:
+        elif action == req.forgot_user_password: #패스워드 찾기 이메일 인증 분기
 
-            try:
-                user = User.objects.get(email=email)
-
-            except ObjectDoesNotExist:
+            if user_exist:
                 result = Return_Module.ReturnPattern.success_text\
                 ("This email is not registration", registration=False, code=random_number)
                 return Response(result)
 
             else:
-                random_number = ran.RanStrCraete.number(4) #4자리 수의 랜덤 숫자 생성
 
-                subject = string_get.send_email_text
-                message = string_get.auth_code_text + random_number
-                auth_email = EmailMessage(subject,message,to=[email])
+                auth_email = Email_Module.email_setting(self, string_get.send_email_text, random_number, email)
 
                 result = Return_Module.ReturnPattern.success_text\
                 ("Send success", registration=True,code=random_number)
@@ -111,35 +112,37 @@ class AccountView(APIView):
     permission_classes = []
     def post(self, request, format=None):
 
-        parameter_list = ["email", "password", "nickname"]
 
         # 에러 처리부분 성공 조건이 아니면 함수 리턴
+
+
+
         # sending으로 안 묶여 있으면 에러 처리
         try:
             request_data = Return_Module.string_to_dict(request.data) #sending 파라미터에서 value 추출해서 dict 형태로 변형
         except KeyError as e:
-            print(f"key error: missing key name {e}") #에러 로그
-            result = Error_Module.ErrorHandling.none_bundle(request_bundle) #클라이언트에 보낼 에러 메시지
+            # print(f"key error: missing key name {e}") #에러 로그
+            result = Error_Module.ErrorHandling.none_bundle(req.request_bundle) #클라이언트에 보낼 에러 메시지
             return Response(result,status = status.HTTP_400_BAD_REQUEST)
 
-        for required in parameter_list: #필수 필드가 포함이 되어 있는지 확인
-            if not required in request_data.keys():
-                dict = Error_Module.ErrorHandling.none_feild(*parameter_list,**request_data)
-                result = Return_Module.ReturnPattern.error_text(**dict)
-                return Response(result,status = status.HTTP_404_NOT_FOUND)
 
         try:
-            nickname_check = User.objects.get(nickname=request_data['nickname'])
+            for key in req.sign_req_keys:
+                request_data[key]
+        except KeyError as e:
+            error_dict = Error_Module.ErrorHandling.none_feild(req.email_auth_req_key,request_data.keys())
+            result = Return_Module.ReturnPattern.error_text(error_dict)
+            return Response(result,status = status.HTTP_400_BAD_REQUEST)
+        else:
+            email = request_data[req.email]
+            password = request_data[req.password]
+            nickname = request_data[req.nickname]
+
+        try:
+            nickname_check = orm.get_user_with_nickname(self,nickname)
         except ObjectDoesNotExist as e:
                 #레코드 생성
-            user = User.objects.create(email = request_data["email"]\
-            , user_uid = request_data["email"]\
-            , password = request_data["password"]\
-            , nickname = request_data["nickname"])
-            # user.user_uid = make_password(request_data["user_uid"])
-            user.set_password(request_data["password"])
-            user.save()
-
+            orm.user_create(self ,email, password, nickname)
             result = Return_Module.ReturnPattern.success_text("Create success",sign_up=True)
             return Response(result, status= status.HTTP_201_CREATED)
 

@@ -29,3 +29,6 @@ class UserManager(BaseUserManager):
         user.is_superuser = True
         user.save(using=self._db)
         return user
+
+    def get_queryset(self):
+        return super(UserManager, self).get_queryset().filter(is_active=True)

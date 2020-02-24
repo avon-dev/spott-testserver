@@ -90,13 +90,17 @@ class User(AbstractBaseUser, PermissionsMixin): #나중에 널 값 처리
 
 class Post(models.Model): #!내용(conents), !작성일, !수정일, !공개여부(public),
                         # !게시물 신고 여부, !신고 날짜, 부적절 게시물 여부(problem), !삭제여부, !삭제 날짜
-
+    before_confirmation = 22000
+    no_problem = 22001
+    bad_location = 22002
+    bad_picture = 22003
+    bad_contents = 22004
     HANDLING_CHOICES = (
-        (22000, '검사 전'),
-        (22001, '사진 통과'),
-        (22002, '잘못된 위치정보'),
-        (22003, '부적절한 사진'),
-        (22004, '부적절한 내용'),
+        (before_confirmation, '검사 전'),
+        (no_problem, '사진 통과'),
+        (bad_location, '잘못된 위치정보'),
+        (bad_picture, '부적절한 사진'),
+        (bad_contents, '부적절한 내용'),
     )
 
     user = models.ForeignKey(User,on_delete=models.CASCADE, related_name= 'get_user') #get_post로 변경
@@ -109,7 +113,7 @@ class Post(models.Model): #!내용(conents), !작성일, !수정일, !공개여�
     created = models.DateTimeField(auto_now_add=True) #작성일
     modify_date = models.DateTimeField(null = True, blank = True) #게시글 수정일
     is_public = models.BooleanField(default = True) #공개여부
-    handling = models.IntegerField(default = 22000 ,choices = HANDLING_CHOICES ,verbose_name = '검사')
+    handling = models.IntegerField(default = before_confirmation ,choices = HANDLING_CHOICES ,verbose_name = '검사')
     problem = models.BooleanField(default = False)
     is_active = models.BooleanField(default = True)
     hashtag = models.ManyToManyField('HashTag', through='PostTag',related_name='get_hashtag')
