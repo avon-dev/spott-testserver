@@ -43,6 +43,18 @@ DATABASES = {
         'USER': 'projectuser',
         'PASSWORD': 'password',
         'HOST': 'localhost',
-        'PORT': '',
+        'PORT': '5432',
     }
 }
+
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': os.environ.get('DJANGO_DB_NAME', 'test1'),
+#         'USER': os.environ.get('DJANGO_DB_USERNAME', 'projectuser'),
+#         'PASSWORD': os.environ.get('DJANGO_DB_PASSWORD', 'password'),
+#         'HOST': os.environ.get('DJANGO_DB_HOST', 'localhost'),
+#         'PORT': os.environ.get('DJANGO_DB_PORT', '5432'),
+#     }
+# }

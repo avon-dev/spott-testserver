@@ -2,7 +2,7 @@
 import json
 
 
-
+from django.core.serializers.json import DjangoJSONEncoder
 import json
 
 
@@ -51,20 +51,28 @@ def jsonDumpsLoads(self,*arg,**kw):
 
 class ReturnPattern:
 
-    def error_text(**dict):
+    def error_text(dict):
         error = {"error":dict}
         result = json.dumps(error)
-        return result
+        return error
 
     def success_text(message,**dict):
         success = {"payload":dict,"message":message}
-        result = json.dumps(success)
+        result = json.dumps(success, cls=DjangoJSONEncoder)
         return result
 
     def success_list_text(message,*list):
         success = {"payload":list,"message":message}
-        result = json.dumps(success)
+        result = json.dumps(success, cls=DjangoJSONEncoder)
         return result
+
+    def success_dict(message,**dict):
+        success = {"payload":dict,"message":message}
+        return success
+
+    def success_list_dict(message,*list):
+        success = {"payload":list,"message":message}
+        return success
 
 
 

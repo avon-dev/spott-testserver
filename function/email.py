@@ -1,5 +1,5 @@
 
-
+from django.core.mail import EmailMessage
 
 def is_valid(addr):
     import re
@@ -8,6 +8,13 @@ def is_valid(addr):
     else:
         return True
 
+
+def email_setting(self, email_contents, random, email):
+    auth_code_text = "인증코드: "
+    subject = email_contents
+    message = auth_code_text + random
+
+    return EmailMessage(subject,message,to=[email])
 
 # class asd:
 #     aa = "a"

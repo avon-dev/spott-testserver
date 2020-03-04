@@ -24,12 +24,12 @@ from simplejwt.rest_framework_simplejwt import views
 #     TokenObtainSlidingView,
 #     TokenRefreshSlidingView,
 # )
-
+app_name = "spott"
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('spott/token', views.TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('spott/token/refresh', views.TokenRefreshView.as_view(), name='token_refresh'),
-    path('spott/token/verify', views.TokenVerifyView.as_view(), name='token_verify'),
+    path('spott/token/verify', views.TokenRefreshView.as_view(), name='token_refresh'),
+    # path('spott/token/verify', views.TokenVerifyView.as_view(), name='token_verify'),
     # path('api/token/', TokenObtainSlidingView.as_view(), name='token_obtain'),
     # path('api/token/refresh/', TokenRefreshSlidingView.as_view(), name='token_refresh'),
     path('spott/', include('testapp.urls'))
