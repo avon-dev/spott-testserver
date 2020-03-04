@@ -41,14 +41,14 @@ class aaa(APIView):
     permission_classes = []
     def post(self, request, format=None):
         # a = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNTg2ODY3MjI1LCJqdGkiOiJmNWFkMDU1NjU4Mzc0MmIzYjQyMWY4MGM4ZTg3NzRjOSIsImlkIjoidXNlcjhAbmF2ZXIuY29tIn0.5tJdXcBDl_AIyjzmu9ZHfrvHtugmRi-_NFUsNDKdvic"
-        b = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNTg4MjYwNjg4LCJqdGkiOiI3ODk2ZTVmNTYxMGY0OTBiOTQzNzBjYjNjNzBjZjI3MiIsImlkIjoidXNlcjNAbmF2ZXIuY29tIn0.Ao_nVTPMxxz0L4lHMAQT5eljrYRGAD35qgqWDI4FONg"
-        refresh = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTU4ODU3OTQzNywianRpIjoiNzM3ODg3NmIwNTYwNDNjZGFmNzNmNzg1YmQ0NDg0MzYiLCJpZCI6InVzZXIzQG5hdmVyLmNvbSJ9.lwr5Ur-Yi38ftDAJz9JKOzp750cs9w2Icc98DHrw06Y"
+        # b = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNTg4MjYwNjg4LCJqdGkiOiI3ODk2ZTVmNTYxMGY0OTBiOTQzNzBjYjNjNzBjZjI3MiIsImlkIjoidXNlcjNAbmF2ZXIuY29tIn0.Ao_nVTPMxxz0L4lHMAQT5eljrYRGAD35qgqWDI4FONg"
+        # refresh = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTU4ODU3OTQzNywianRpIjoiNzM3ODg3NmIwNTYwNDNjZGFmNzNmNzg1YmQ0NDg0MzYiLCJpZCI6InVzZXIzQG5hdmVyLmNvbSJ9.lwr5Ur-Yi38ftDAJz9JKOzp750cs9w2Icc98DHrw06Y"
         # jsond = json.dumps(a)
         # string = request.headers["Authorization"]
-        timestamp_to_days = 60*60*24
-        decodedPayload = jwt.decode(refresh,None,None)
-        int(time.time())
-        now_date = datetime.datetime.fromtimestamp(int(time.time()))
+        # timestamp_to_days = 60*60*24
+        # decodedPayload = jwt.decode(refresh,None,None)
+        # int(time.time())
+        # now_date = datetime.datetime.fromtimestamp(int(time.time()))
         # exp_date = datetime.datetime.fromtimestamp(decodedPayload['exp'])
         # # str = f"year : {exp_date.year- now_date.year} , month : {exp_date.month - now_date.month} , day : {exp_date.day - now_date.day}"
         # str = f"year : {exp_date.year} , month : {exp_date.month} , day : {exp_date.day}"
@@ -61,8 +61,29 @@ class aaa(APIView):
         #     return redirect('/spott/home/token',request = "asd")
         # else:
         #     return Response(d_day)
-        return Response(now_date)
 
+
+        # user = User.objects.filter(is_active = True).values()
+        # user = User.objects.filter(is_active = True).select_related('get_user')
+        post = Post.objects.filter(is_active = True).select_related('user__id')
+        return Response(post)
+
+        #코멘트를 불러오는 조건이 신고당하지 않은
     def get(self, request, format=None):
-        now_date = datetime.datetime.fromtimestamp(int(time.time()))
-        return render(request,'spotts/token_verify.html', {'time': now_date})
+        # post = Post.objects.select_related('user').filter(is_active = True)
+        # user = User.objects.filter(is_active = True).select_related('get_user')
+        comment = Comment.objects.all().values('id')
+        report = Report.objects.filter(reporter_id = "user8@naver.com",comment__in = comment, handling = Report.before_comment).values('comment_id')
+        comment = comment.filter(is_active = True,\
+        post_id = 1705, is_problem = False).exclude(id__in= report).\
+        order_by('-id')
+        [entry for entry in comment]
+        comment.count()
+        comment.count()
+        comment.count()
+        comment.count()
+        comment.count()
+        comment.count()
+        comment.count()
+        user = User.objects.get(id=3)
+        return Response(str(comment.values()))

@@ -9,7 +9,6 @@ from random import *
 class MypageViewSet(APIView):
 
     permission_classes = (IsAuthenticated,)
-    request_data_key = ['is_public']
     def get(self, request, format=None):
         # string = request.headers["Authorization"]
         # decodedPayload = jwt.decode(string[4:],None,None)
@@ -29,19 +28,36 @@ class MypageViewSet(APIView):
 
 
 #게시물 공게 비공개 설정
+    @transaction.atomic
     def patch(self, request, format=None):
-        request_data = Return_Module.string_to_dict(request.data) #sending으로 묶여서 오는 파라미터 데이터 추출
-        print(str(request_data))
-        print(decodedPayload["id"])
+        request_data_key = ['is_public']
+        # sending으로 안 묶여 있으면 에러 처리
+        try:
+            request_data = Return_Module.string_to_dict(request.data) #sending 파라미터에서 value 추출해서 dict 형태로 변형
+        except KeyError as e:
+            # print(f"key error: missing key name {e}") #에러 로그
+            result = Error_Module.ErrorHandling.none_bundle(req.request_bundle, e) #클라이언트에 보낼 에러 메시지
+            return Response(result,status = status.HTTP_400_BAD_REQUEST)
+
+        #필드에 필수 키가 있는지 확인 후 없을 경우 에러 반환
+        try:
+            for key in request_data_key:
+                request_data[key]
+        except KeyError as e:
+            error_dict = Error_Module.ErrorHandling.none_feild(request_data_key,request_data.keys(), e)
+            result = Return_Module.ReturnPattern.error_text(error_dict)
+            return Response(result,status = status.HTTP_400_BAD_REQUEST)
+        else:
+            is_public = request_data[request_data_key[0]]
+
 
         user = orm.get_myself(self, request)
 
-        user.is_public = request_data[self.request_data_key[0]]
-        post = Post.objects.filter(user = user).update(is_public = request_data[self.request_data_key[0]])
-        post_r = Post.objects.filter(user = user)
+        user.is_public = is_public
+        post = Post.objects.filter(user = user).update(is_public = is_public)
         user.save()
         # print(str(post.values()))
-        if request_data[self.request_data_key[0]]:
+        if is_public:
             result = Return_Module.ReturnPattern.success_text\
             ("public account" , is_public = True)
             return Response(result)
@@ -59,10 +75,29 @@ class UserMypageViewSet(APIView):
 
     def get(self, request, pk, format=None):
         my_email = req.my_email(self, request)
-        request_data = Return_Module.string_to_dict(request.GET) #sending으로 묶여서 오는 파라미터 데이터 추출
-        action = request_data[req.action]
         action_search = 1201
         action_user_mypage = 1202
+        request_data_key = ['action']
+
+        # sending으로 안 묶여 있으면 에러 처리
+        try:
+            request_data = Return_Module.string_to_dict(request.GET) #sending 파라미터에서 value 추출해서 dict 형태로 변형
+        except KeyError as e:
+            # print(f"key error: missing key name {e}") #에러 로그
+            result = Error_Module.ErrorHandling.none_bundle(req.request_bundle, e) #클라이언트에 보낼 에러 메시지
+            return Response(result,status = status.HTTP_400_BAD_REQUEST)
+
+        print("request.GET"+str(request.GET))
+        #필드에 필수 키가 있는지 확인 후 없을 경우 에러 반환
+        try:
+            for key in request_data_key:
+                request_data[key]
+        except KeyError as e:
+            error_dict = Error_Module.ErrorHandling.none_feild(request_data_key,request_data.keys(), e)
+            result = Return_Module.ReturnPattern.error_text(error_dict)
+            return Response(result,status = status.HTTP_400_BAD_REQUEST)
+        else:
+            action = request_data[req.action]
 
         user = orm.get_user_pk(self, pk)
 

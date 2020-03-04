@@ -1,8 +1,17 @@
 from testapp.models import *
 import jwt
 from django.db import transaction
+from django.db import IntegrityError
+from django.core.exceptions import ObjectDoesNotExist
 
-
+def tag_exist(self, tag_name):
+    try:
+        HashTag.objects.get(name = tag_name)
+    except ObjectDoesNotExist as e:
+        tag_exist = False
+    else:
+        tag_exist = True
+    return tag_exist
 
 
 def get_myself(self, request):
@@ -34,6 +43,6 @@ def user_create(self, email, password, nickname):
     , password = password\
     , nickname = nickname)
     # user.user_uid = make_password(request_data["user_uid"])
-    user.set_password(request_data["password"])
+    user.set_password(password)
     user.save()
     return True

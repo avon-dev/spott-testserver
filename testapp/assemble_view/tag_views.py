@@ -24,7 +24,8 @@ class HashTagView(APIView):
         last_index = page + 31
 
         #생성일 넘겨주는 부분
-        posts_obj = Post.objects.filter(is_active = True, problem = False, is_public = True, hashtag__name = tag_name).order_by('-id').distinct('id')[begin_item:last_index]\
+        posts_obj = Post.objects.filter(is_active = True, problem = False, \
+        is_public = True, hashtag__name = tag_name).order_by('-id').distinct('id')[begin_item:last_index]\
                     if craeted_time == ""\
                     else Post.objects.filter(is_active = True, problem = False, is_public = True, hashtag__name = tag_name, created__lte=craeted_time).order_by('-id').distinct('id')[begin_item:last_index]
 
@@ -87,64 +88,64 @@ class HashTagView(APIView):
 # ("show mypage", items = home_serializers.data, created_time = created_time, pageable = pageable)
 #
 # return Response(result,status=status.HTTP_200_OK)
-
-    def post(self, request, format=None):
-
-        # string = request.headers["Authorization"]
-        # decodedPayload = jwt.decode(string[4:],None,None)
-        # testdd = test.objects.create(latitude = request_data["latitude"] ,testfield = request_data["testfield"], photo = request.FILES["photo"], photo2 = request.FILES["photo2"], dummy = request_data["dummy"])
-
-        for count in range(1600, 1680):
-            try:
-                posts = Post.objects.get(id =count)
-            except Exception as e:
-                print('잘못된 값을 넣었습니다!')
-            else:
-                hash_tag_name_list = ["쇼쇼"]
-            # hash_tag = []
-
-                tag_obj = HashTag.objects.all()
-                tag_serial = HashTagSerializer(tag_obj, many = True)
-                for list in hash_tag_name_list:
-                    try:
-                        hash_tag = HashTag.objects.create(name = list)
-                    except  IntegrityError:
-                        hash_tag = HashTag.objects.get(name = list)
-                        PostTag.objects.create(post = posts, tag = hash_tag)
-                        hash_tag.count += 1
-                        hash_tag.save()
-                        # return Response("ex")
-                    else:
-                        PostTag.objects.create(post = posts, tag = hash_tag)
-                        hash_tag.count += 1
-                        hash_tag.save()
-
-        # hash_tag_list = request.GET['tag'][1:].split("#")
-                # return Response("success")
-        return Response("success")
-        # create_hash = HashTag.objects.bulk_create(hash_tag)
-
-    def patch(self, request, format=None):
-
-        # string = request.headers["Authorization"]
-        # decodedPayload = jwt.decode(string[4:],None,None)
-        # testdd = test.objects.create(latitude = request_data["latitude"] ,testfield = request_data["testfield"], photo = request.FILES["photo"], photo2 = request.FILES["photo2"], dummy = request_data["dummy"])
-        posts = Post.objects.get(id = 1684)
-        # hash_tag_list = request.GET['tag'][1:].split("#")
-        hash_tag_name_list = ['조커','머레이']
-        # hash_tag = []
-        # post_hash_obj = PostTag.objects.filter(post = pk).delete()
-        post_hash_obj = PostTag.objects.filter(post = posts) #연결된 태그 말소
-        hash_tag_list = HashTag.objects.all()
-
-        for post_hash in post_hash_obj.values():
-            hash_obj = hash_tag_list.get(id = post_hash['tag_id'])
-            hash_obj.count -= 3
-            hash_obj.save()
-            return Response(hash_obj.count)
-        # for tag_name in hash_tag_name_list:
-        #     hash_tag_obj.get(name = tag_name)
-        #     hash_tag_obj.count -= 1
-        #     hash_tag_obj.save()
-        return Response(post_hash_obj.values())
-        # create_hash = HashTag.objects.bulk_create(hash_tag)
+    # @transaction.atomic
+    # def post(self, request, format=None):
+    #
+    #     # string = request.headers["Authorization"]
+    #     # decodedPayload = jwt.decode(string[4:],None,None)
+    #     # testdd = test.objects.create(latitude = request_data["latitude"] ,testfield = request_data["testfield"], photo = request.FILES["photo"], photo2 = request.FILES["photo2"], dummy = request_data["dummy"])
+    #
+    #     for count in range(1600, 1680):
+    #         try:
+    #             posts = Post.objects.get(id =count)
+    #         except Exception as e:
+    #             print('잘못된 값을 넣었습니다!')
+    #         else:
+    #             hash_tag_name_list = ["쇼쇼"]
+    #         # hash_tag = []
+    #
+    #             tag_obj = HashTag.objects.all()
+    #             tag_serial = HashTagSerializer(tag_obj, many = True)
+    #             for list in hash_tag_name_list:
+    #                 try:
+    #                     hash_tag = HashTag.objects.create(name = list)
+    #                 except  IntegrityError:
+    #                     hash_tag = HashTag.objects.get(name = list)
+    #                     PostTag.objects.create(post = posts, tag = hash_tag)
+    #                     hash_tag.count += 1
+    #                     hash_tag.save()
+    #                     # return Response("ex")
+    #                 else:
+    #                     PostTag.objects.create(post = posts, tag = hash_tag)
+    #                     hash_tag.count += 1
+    #                     hash_tag.save()
+    #
+    #     # hash_tag_list = request.GET['tag'][1:].split("#")
+    #             # return Response("success")
+    #     return Response("success")
+    #     # create_hash = HashTag.objects.bulk_create(hash_tag)
+    # @transaction.atomic
+    # def patch(self, request, format=None):
+    #
+    #     # string = request.headers["Authorization"]
+    #     # decodedPayload = jwt.decode(string[4:],None,None)
+    #     # testdd = test.objects.create(latitude = request_data["latitude"] ,testfield = request_data["testfield"], photo = request.FILES["photo"], photo2 = request.FILES["photo2"], dummy = request_data["dummy"])
+    #     posts = Post.objects.get(id = 1684)
+    #     # hash_tag_list = request.GET['tag'][1:].split("#")
+    #     hash_tag_name_list = ['조커','머레이']
+    #     # hash_tag = []
+    #     # post_hash_obj = PostTag.objects.filter(post = pk).delete()
+    #     post_hash_obj = PostTag.objects.filter(post = posts) #연결된 태그 말소
+    #     hash_tag_list = HashTag.objects.all()
+    #
+    #     for post_hash in post_hash_obj.values():
+    #         hash_obj = hash_tag_list.get(id = post_hash['tag_id'])
+    #         hash_obj.count -= 3
+    #         hash_obj.save()
+    #         return Response(hash_obj.count)
+    #     # for tag_name in hash_tag_name_list:
+    #     #     hash_tag_obj.get(name = tag_name)
+    #     #     hash_tag_obj.count -= 1
+    #     #     hash_tag_obj.save()
+    #     return Response(post_hash_obj.values())
+    #     # create_hash = HashTag.objects.bulk_create(hash_tag)

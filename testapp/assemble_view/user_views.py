@@ -10,15 +10,19 @@ class UserView(BaseAPIView):
     #회원 탈퇴
     #로그아웃 로그아웃을 하게 되면 토큰 블랙리스트에 추가
     permission_classes = (IsAuthenticated,)
+
+
+
     def get (self, request, format=None):
         # super().get(request)
         string = request.headers["Authorization"]
         decodedPayload = jwt.decode(string[4:],None,None)
         user = User.objects.get(user_uid = decodedPayload["id"])
-        serializers = MyUserSerializer(user)
+        serializers = MyProfileSerializer(user)
         result = Return_Module.ReturnPattern.success_text("user info get",result=True, **serializers.data)
         return Response(result)
 
+    @transaction.atomic
     def patch (self, request, format=None):
         print(str(request.data))
         print(str(request.FILES))
@@ -52,7 +56,7 @@ class UserView(BaseAPIView):
 
 
 
-
+    @transaction.atomic
     def delete(self, request, format=None):
         string = request.headers["Authorization"]
         decodedPayload = jwt.decode(string[4:],None,None)
@@ -83,7 +87,7 @@ class PasswordView(APIView):
 
 
 
-
+    @transaction.atomic
     def patch(self, request, format = None):
         request_data = Return_Module.string_to_dict(request.data)
         string = request.headers["Authorization"]

@@ -105,7 +105,7 @@ class Post(models.Model): #!내용(conents), !작성일, !수정일, !공개여�
 
     user = models.ForeignKey(User,on_delete=models.CASCADE, related_name= 'get_user') #get_post로 변경
     posts_image = models.ImageField(upload_to = 'post') #R
-    back_image = models.ImageField(upload_to = 'postb') #R
+    back_image = models.ImageField(upload_to = 'postb',null = True, blank = True) #R
     latitude = models.FloatField() #R
     longitude = models.FloatField() #R
     contents = models.TextField(default = "",verbose_name = '내용') #내용
@@ -200,27 +200,41 @@ class Scrapt(models.Model):
 DEFAULT_TEST_MODEL_PK = -1
 
 class Report(models.Model):
+
+    etc = 0
+    spam = 1
+    slander = 2
+    porno = 3
+    steal = 4
+
+    before_posts = 1
+    after_posts = 2
+    before_comment = 3
+    after_comment = 4
+
     REASON_CHOICES = (
-        (0, '기타'),
-        (1, '스팸'),
-        (2, '욕설 및 비방'),
-        (3, '음란물'),
-        (4, '무단도용'),
-    )
-    HANDLING_CHOICES = (
-        (0, '신고 x'),
-        (1, '게시물 전'),
-        (2, '게시물 후'),
-        (3, '댓글 전'),
-        (4, '댓글 후'),
+        (etc, '기타'),
+        (spam, '스팸'),
+        (slander, '욕설 및 비방'),
+        (porno, '음란물'),
+        (steal, '무단도용'),
     )
 
-    reporter = models.ForeignKey(User, on_delete=models.DO_NOTHING, to_field="user_uid", blank = True, null = True , related_name="%(app_label)s_%(class)s_reporter_related")
-    post_owner = models.CharField(default = "null",max_length = 200) #삭제해도 됨
-    comment_owner = models.CharField(default = "null",max_length = 200) #삭제해도 됨
-    post = models.ForeignKey(Post, on_delete=models.DO_NOTHING, blank = True, \
+
+    HANDLING_CHOICES = (
+        (0, '신고 x'),
+        (before_posts, '게시물 전'),
+        (after_posts, '게시물 후'),
+        (before_comment, '댓글 전'),
+        (after_comment, '댓글 후'),
+    )
+
+    reporter = models.ForeignKey(User, on_delete=models.CASCADE, to_field="user_uid", blank = True, null = True , related_name="%(app_label)s_%(class)s_reporter_related")
+    # post_owner = models.CharField(default = "null",max_length = 200) #삭제해도 됨
+    # comment_owner = models.CharField(default = "null",max_length = 200) #삭제해도 됨
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, blank = True, \
     null = True, related_name="%(app_label)s_%(class)s_post_related")
-    comment = models.ForeignKey(Comment, on_delete=models.DO_NOTHING, blank = True,\
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, blank = True,\
     null = True, related_name="%(app_label)s_%(class)s_comment_related")
 
     handling = models.IntegerField(default = 0,choices = HANDLING_CHOICES, verbose_name = '신고처리')
@@ -230,7 +244,7 @@ class Report(models.Model):
     reason = models.IntegerField(default = -1, choices = REASON_CHOICES)
     detail = models.TextField(default = "", verbose_name = "상세내용")
     created_date= models.DateTimeField(auto_now_add=True) #신고 날짜
-
+    reason_detail = models.TextField(default = "",verbose_name = "사유 작성란" ) #상세 사유
 
     def __str__(self):
         return f"id: {str(self.id)} reason: {self.get_reason_display()}"
@@ -242,19 +256,23 @@ class Report(models.Model):
 
 
 class Notice(models.Model):
+    picture_return = 22001
+    picture_no_problem = 22002
+    created_comment = 22003
+    violation_posts = 22004
+    violation_comment = 22005
     KIND_CHOICES = (
-        (22001, '사진 반려'),
-        (22002, '사진 통과'),
-        (22003, '댓글 남김'),
-        (22004, '규칙 위반 게시물'),
-        (22005, '규칙 위반 댓글'),
+        (picture_return, '사진 반려'),
+        (picture_no_problem, '사진 통과'),
+        (created_comment, '댓글 남김'),
+        (violation_posts, '규칙 위반 게시물'),
+        (violation_comment, '규칙 위반 댓글'),
     )
 
     receiver = models.ForeignKey(User, on_delete=models.CASCADE, to_field="id",related_name="%(app_label)s_%(class)s_receiver_related")
     post = models.ForeignKey(Post, on_delete=models.CASCADE, blank = True, null = True, to_field="id",related_name="%(app_label)s_%(class)s_post_related")
     comment = models.ForeignKey(Comment, on_delete=models.CASCADE, blank = True, null = True, to_field="id",related_name="%(app_label)s_%(class)s_comment_related")
     report = models.ForeignKey(Report, on_delete=models.CASCADE, blank = True, null = True, to_field="id",related_name="%(app_label)s_%(class)s_report_related")
-    reason_detail = models.TextField(default = "") #상세 사유
     kind = models.IntegerField(choices = KIND_CHOICES, verbose_name = '알림 종류')
     confirmation = models.BooleanField(default = False, verbose_name = '확인')
     created_date= models.DateTimeField(auto_now_add=True)

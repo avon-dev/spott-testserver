@@ -18,16 +18,16 @@ class EmailAuthentication(APIView):
             request_data = Return_Module.string_to_dict(request.GET) #sending 파라미터에서 value 추출해서 dict 형태로 변형
         except KeyError as e:
             # print(f"key error: missing key name {e}") #에러 로그
-            result = Error_Module.ErrorHandling.none_bundle(req.request_bundle) #클라이언트에 보낼 에러 메시지
+            result = Error_Module.ErrorHandling.none_bundle(req.request_bundle,e) #클라이언트에 보낼 에러 메시지
             return Response(result,status = status.HTTP_400_BAD_REQUEST)
 
-
+        print("request.GET"+str(request.GET))
         #필드에 필수 키가 있는지 확인 후 없을 경우 에러 반환
         try:
             for key in req.email_auth_req_key:
                 request_data[key]
         except KeyError as e:
-            error_dict = Error_Module.ErrorHandling.none_feild(req.email_auth_req_key,request_data.keys())
+            error_dict = Error_Module.ErrorHandling.none_feild(req.email_auth_req_key,request_data.keys(), e)
             result = Return_Module.ReturnPattern.error_text(error_dict)
             return Response(result,status = status.HTTP_400_BAD_REQUEST)
         else:
@@ -68,18 +68,12 @@ class EmailAuthentication(APIView):
             else:
                 print("send fail")
                 result = Return_Module.ReturnPattern.success_text\
-                ("Duplicate email", duplication=True, code=random_number)
+                ("Duplicate email", duplication=True, code="")
                 return Response(result)
 
         elif action == req.forgot_user_password: #패스워드 찾기 이메일 인증 분기
 
             if user_exist:
-                result = Return_Module.ReturnPattern.success_text\
-                ("This email is not registration", registration=False, code=random_number)
-                return Response(result)
-
-            else:
-
                 auth_email = Email_Module.email_setting(self, string_get.send_email_text, random_number, email)
 
                 result = Return_Module.ReturnPattern.success_text\
@@ -90,6 +84,15 @@ class EmailAuthentication(APIView):
                     return Response(result)
                 else:
                     return Response({"error":"Email failed to send"}) #클라이언트와 회의 하여 다시 작성
+                result = Return_Module.ReturnPattern.success_text\
+                ("This email is not registration", registration=False, code=random_number)
+                return Response(result)
+
+            else:
+                result = Return_Module.ReturnPattern.success_text\
+                ("This email is not registration", registration=False, code="")
+                return Response(result)
+
         else:
             result = Return_Module.ReturnPattern.success_text\
             ("not find action value")
@@ -110,33 +113,32 @@ class EmailAuthentication(APIView):
 
 class AccountView(APIView):
     permission_classes = []
+    @transaction.atomic
     def post(self, request, format=None):
-
-
         # 에러 처리부분 성공 조건이 아니면 함수 리턴
-
-
 
         # sending으로 안 묶여 있으면 에러 처리
         try:
             request_data = Return_Module.string_to_dict(request.data) #sending 파라미터에서 value 추출해서 dict 형태로 변형
         except KeyError as e:
             # print(f"key error: missing key name {e}") #에러 로그
-            result = Error_Module.ErrorHandling.none_bundle(req.request_bundle) #클라이언트에 보낼 에러 메시지
+            result = Error_Module.ErrorHandling.none_bundle(req.request_bundle, e) #클라이언트에 보낼 에러 메시지
             return Response(result,status = status.HTTP_400_BAD_REQUEST)
-
-
+        print(str(request_data))
+        #필수키가 없을 경우 400 에러 반환
         try:
+            print(str(request.data))
             for key in req.sign_req_keys:
                 request_data[key]
         except KeyError as e:
-            error_dict = Error_Module.ErrorHandling.none_feild(req.email_auth_req_key,request_data.keys())
+            error_dict = Error_Module.ErrorHandling.none_feild(req.sign_req_keys,request_data.keys(), e)
             result = Return_Module.ReturnPattern.error_text(error_dict)
             return Response(result,status = status.HTTP_400_BAD_REQUEST)
         else:
             email = request_data[req.email]
             password = request_data[req.password]
             nickname = request_data[req.nickname]
+
 
         try:
             nickname_check = orm.get_user_with_nickname(self,nickname)
@@ -151,16 +153,40 @@ class AccountView(APIView):
             (sign_up=False, message="Create fail")
             return Response(result, status = status.HTTP_200_OK)
 
+
+    @transaction.atomic
     def patch(self, request, format = None):
-        request_data = Return_Module.string_to_dict(request.data)
-        email = request_data['email']
-        password = request_data['password']
+
+        # sending으로 안 묶여 있으면 에러 처리
+        try:
+            request_data = Return_Module.string_to_dict(request.data) #sending 파라미터에서 value 추출해서 dict 형태로 변형
+        except KeyError as e:
+            # print(f"key error: missing key name {e}") #에러 로그
+            result = Error_Module.ErrorHandling.none_bundle(req.request_bundle, e) #클라이언트에 보낼 에러 메시지
+            return Response(result,status = status.HTTP_400_BAD_REQUEST)
+
+        #필수키가 없을 경우 400 에러 반환
+        try:
+            print(str(request.data))
+            for key in req.find_password_req_keys:
+                request_data[key]
+        except KeyError as e:
+            error_dict = Error_Module.ErrorHandling.none_feild(req.find_password_req_keys,request_data.keys(), e)
+            result = Return_Module.ReturnPattern.error_text(error_dict)
+            return Response(result,status = status.HTTP_400_BAD_REQUEST)
+        else:
+            email = request_data[req.email]
+            password = request_data[req.password]
+
+
+
+
         try:
             result = Return_Module.ReturnPattern.success_text("update success password",result=True)
             user = User.objects.get(is_active = True, email = email)
-        except Exception as e:
-            result = Return_Module.ReturnPattern.success_text("update fail password",result=False)
-            return Response(result, status = status.HTTP_200_OK)
+        except ObjectDoesNotExist as e:
+            result = Return_Module.ReturnPattern.error_text(str(e))
+            return Response(result, status = status.HTTP_404_NOT_FOUND)
 
         else:
             user.set_password(password)

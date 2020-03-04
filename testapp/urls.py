@@ -52,7 +52,7 @@ urlpatterns = [
     path('posts/<int:pk>/scrap', scrap_views.Scrap.as_view()),
 
     #유저 스크랩 화면
-    path('users/0/scrap', scrap_views.MultiScrap.as_view()),
+    path('users/my-scrap', scrap_views.MultiScrap.as_view()),
 
     path('', include(router.urls)),
 
@@ -72,6 +72,6 @@ urlpatterns = [
 
 
 
-    path('map/posts', map_views.Posts.as_view()), #post에서 분기처리
+    # path('map/posts', map_views.Posts.as_view()), #post에서 분기처리
 ]
 # urlpatterns = format_suffix_patterns(urlpatterns)

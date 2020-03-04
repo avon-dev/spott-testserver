@@ -18,20 +18,44 @@ class SearchView(APIView):
 # #으로 검색을 했을 시에는 해쉬태그로 검색 아이템 하나로
 # 검색을 할 때 그러면 객체의 수를 다 세어서
     def get(self, request, format=None):
-        request_data = Return_Module.string_to_dict(request.GET)
-        word = request_data['search_word']
-        is_tag = request_data['is_tag']
+        required_keys = ['search_word', 'is_tag']
+        # sending으로 안 묶여 있으면 에러 처리
+        try:
+            request_data = Return_Module.string_to_dict(request.GET) #sending 파라미터에서 value 추출해서 dict 형태로 변형
+        except KeyError as e:
+            # print(f"key error: missing key name {e}") #에러 로그
+            result = Error_Module.ErrorHandling.none_bundle(req.request_bundle, e) #클라이언트에 보낼 에러 메시지
+            return Response(result,status = status.HTTP_400_BAD_REQUEST)
+
+        #필드에 필수 키가 있는지 확인 후 없을 경우 에러 반환
+        try:
+            for key in required_keys:
+                request_data[key]
+        except KeyError as e:
+            error_dict = Error_Module.ErrorHandling.none_feild(required_keys,request_data.keys(), e)
+            result = Return_Module.ReturnPattern.error_text(error_dict)
+            return Response(result,status = status.HTTP_400_BAD_REQUEST)
+        else:
+            search_word = request_data[required_keys[0]]
+            is_tag = request_data[required_keys[1]]
+
+        post = Post.objects.filter(is_active = True, problem = False, is_public = True)
+        post_tag = PostTag.objects.filter(post__in = post).distinct('tag').values()
+        tag_id_list = []
+        for tag in post_tag:
+            tag_id_list.append(tag['tag_id'])
+        print(str(post_tag))
         if is_tag:
-            tag_obj = HashTag.objects.filter(name__istartswith = word).order_by('-count')[:16]
+
+            tag_obj = HashTag.objects.filter(name__istartswith = search_word, id__in = tag_id_list).order_by('-count')[:16]
             tag_serializer = SearchTagSerializer(tag_obj, many = True)
             result = Return_Module.ReturnPattern.success_text\
             ("Search success", items = tag_serializer.data)
             return Response(result)
         else:
-            user_obj = User.objects.filter(is_active = True, nickname__istartswith = word)
-            tag_obj = HashTag.objects.filter(name__istartswith = word)
+            user_obj = User.objects.filter(is_active = True, nickname__istartswith = search_word)
+            tag_obj = HashTag.objects.filter(name__istartswith = search_word, id__in = tag_id_list)
             tag_serializer = SearchTagSerializer(tag_obj,many=True)
-
             user_serializer = SearchNameSerializer(user_obj,many=True)
 
             user_json_dumps_loads = json.loads(json.dumps(user_serializer.data))
@@ -61,6 +85,7 @@ class RecentSearchView(viewsets.ViewSet):
 
     action_user = 1202
     action_tag = 1102
+    #user, tag 각 각 하나씩 2쿼리
     def list(self,request):
         string = request.headers["Authorization"]
         decodedPayload = jwt.decode(string[4:],None,None)
@@ -68,7 +93,12 @@ class RecentSearchView(viewsets.ViewSet):
         user = User.objects.all()
         tag = HashTag.objects.all()
         list = []
-        myself = user.get(user_uid = decodedPayload['id'])
+        try:
+            myself = user.get(user_uid = decodedPayload['id'])
+        except User.DoesNotExist as e:
+            result = Return_Module.ReturnPattern.error_text(str(e))
+            return Response(result,status = status.HTTP_404_NOT_FOUND)
+
         count = 0
         for recent in myself.recent_search:
             if recent['action'] == 1202:
@@ -85,6 +115,7 @@ class RecentSearchView(viewsets.ViewSet):
 
 
 #사이즈가 16이상시 맨 마지막꺼 pop 시키는 코드 추가
+    @transaction.atomic
     def post(self, request):
         request_data_key = ['action','tag_name', 'user_pk']
 
@@ -93,19 +124,20 @@ class RecentSearchView(viewsets.ViewSet):
         request_data = Return_Module.string_to_dict(request.data)
         user = User.objects.get(user_uid = decodedPayload['id'])
         print(decodedPayload['id'])
-        # user.recent_search.insert(0,request_data)
-        # del user.recent_search[0]
-        # user.save()
-        #
-        # result = Return_Module.ReturnPattern.success_text\
-        # ("create success",result = True)
 
 
-        return Response(user.recent_search, status=status.HTTP_201_CREATED)
+        user.recent_search.insert(0,request_data)
+        del user.recent_search[0]
+        user.save()
+
+        result = Return_Module.ReturnPattern.success_text\
+        ("create success",result = True)
+
+
+        return Response(result, status=status.HTTP_201_CREATED)
 
 
 
-#
     # def partial_update(self, request, pk=None):
     #     position = int(pk)
     #     string = request.headers["Authorization"]
@@ -122,7 +154,7 @@ class RecentSearchView(viewsets.ViewSet):
 
 
 
-
+    @transaction.atomic
     def destroy(self, request, pk=None):
         position = int(pk)
         string = request.headers["Authorization"]

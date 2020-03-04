@@ -18,18 +18,18 @@ class CommentView(APIView):
     #     comment = Comment.objects.filter(pk = pk, user_id = user.id)
     #     return Response(comment.values())
 
-
+    @transaction.atomic
     def delete(self, request, post_pk, pk, format=None):
-        post = Post.objects.get(pk = post_pk) #해당 포스트 가져오기
+        # post = Post.objects.get(pk = post_pk) #해당 포스트 가져오기
 
-        #접속한 유저의 id 가져오기
-        user = req.get_myself(self, request)
+        #접속한 유저 가져오기
+        user = orm.get_myself(self, request)
 
         result = Return_Module.ReturnPattern.success_dict\
         (string_get.successful_delete,result=True)
 
         try:
-            comment = Comment.objects.get(pk = pk, user_id = user.id)
+            comment = Comment.objects.get(is_active = True,pk = pk, user_id = user.id)
         except ObjectDoesNotExist:
             result['message'] = string_get.impossible_deleted
             result['payload']['result'] = False
@@ -41,18 +41,33 @@ class CommentView(APIView):
             result = json.dumps(result)
             return Response(result)
 
-
+    @transaction.atomic
     def patch(self, request, post_pk, pk, format=None):
-        request_data = Return_Module.string_to_dict(request.data)
-        print(request_data)
         my_email = req.my_email(self, request)
 
+        # sending으로 안 묶여 있으면 에러 처리
+        try:
+            request_data = Return_Module.string_to_dict(request.data) #sending 파라미터에서 value 추출해서 dict 형태로 변형
+        except KeyError as e:
+            # print(f"key error: missing key name {e}") #에러 로그
+            result = Error_Module.ErrorHandling.none_bundle(req.request_bundle, e) #클라이언트에 보낼 에러 메시지
+            return Response(result,status = status.HTTP_400_BAD_REQUEST)
+
+        #필드에 필수 키가 있는지 확인 후 없을 경우 에러 반환
+        try:
+            for key in req.comment_update_keys:
+                request_data[key]
+        except KeyError as e:
+            error_dict = Error_Module.ErrorHandling.none_feild(req.comment_update_keys,request_data.keys(), e)
+            result = Return_Module.ReturnPattern.error_text(error_dict)
+            return Response(result,status = status.HTTP_400_BAD_REQUEST)
+
         result = Return_Module.ReturnPattern.success_dict\
-        (string_get.impossible_update,result=True)
+        (string_get.successful_update,result=True)
 
         try:
             user = User.objects.get(email = my_email)
-            comment = Comment.objects.get(pk = pk, user_id = user.id)
+            comment = Comment.objects.get(is_active = True,pk = pk, user_id = user.id)
         except ObjectDoesNotExist:
             result['message'] = string_get.update_failed
             result['payload']['result'] = False
@@ -66,7 +81,7 @@ class CommentView(APIView):
 
             if serializer.is_valid():
                 serializer.save()
-                print("update")
+                result = json.dumps(result)
                 return Response(result)
 
 
@@ -76,20 +91,43 @@ class CommentView(APIView):
 class CommentListView(APIView):
     permission_classes = (IsAuthenticated,)
 
-#게시글 아이디, 유저 닉네임, 유저 이미지,
+
     def get(self, request, post_pk, format=None):
-        data = Return_Module.string_to_dict(request.GET)
-        page = data['page'] #클라이언트에서 보내주는 page count
-        craeted_time = data['created_time'] #클라이언트에서 보내주는 최신 게시물 생성 날짜
-        action = data['action'] #클라이언트에서 보내주는 page count
+
+
+        # sending으로 안 묶여 있으면 에러 처리
+        try:
+            request_data = Return_Module.string_to_dict(request.GET) #sending 파라미터에서 value 추출해서 dict 형태로 변형
+        except KeyError as e:
+            # print(f"key error: missing key name {e}") #에러 로그
+            result = Error_Module.ErrorHandling.none_bundle(req.request_bundle, e) #클라이언트에 보낼 에러 메시지
+            return Response(result,status = status.HTTP_400_BAD_REQUEST)
+
+        #필드에 필수 키가 있는지 확인 후 없을 경우 에러 반환
+        try:
+            for key in req.comment_show_list_keys:
+                request_data[key]
+        except KeyError as e:
+            error_dict = Error_Module.ErrorHandling.none_feild(req.comment_show_list_keys,request_data.keys(), e)
+            result = Return_Module.ReturnPattern.error_text(error_dict)
+            return Response(result,status = status.HTTP_400_BAD_REQUEST)
+        else:
+            page = request_data[req.page] #클라이언트에서 보내주는 page count
+            craeted_time = request_data[req.created_time] #클라이언트에서 보내주는 최신 게시물 생성 날짜
+            action = request_data[req.action] #클라이언트에서 보내주는 page count
+
+
+
         my_email = req.my_email(self, request)
-        #페이징
+
+
+        #페이징 넘버
         begin_item = page
         last_index = page + 21
-        # print(craeted_time)
-        # exclude(id__in= report).
+
         comment = Comment.objects.all()
-        report = Report.objects.filter(reporter_id = my_email,comment__in = comment, handling = 3).values('comment_id')
+        report = Report.objects.filter(reporter_id = my_email,\
+        comment__in = comment, handling = Report.before_comment).values('comment_id')
 
         comment = comment.filter(is_active = True,\
         post_id = post_pk, is_problem = False).exclude(id__in= report).\
@@ -126,11 +164,12 @@ class CommentListView(APIView):
         comment_dict = json.loads(comment_dump)
         count = 0
         for data in comment_dict:
-            if data['user']['user_uid'] == decodedPayload['id']:
+            if data['user']['user_uid'] == my_email:
                 comment_dict[count]['myself'] = True
             else:
                 comment_dict[count]['myself'] = False
             count = count + 1
+
         if action == req.notice_to_comment:
             post = Post.objects.filter(id=post_pk)
             notice_list = list(post.values('user', 'contents', "created"))
@@ -138,13 +177,13 @@ class CommentListView(APIView):
             notice_list[0]['user_profile_image'] = post[0].user.profile_image.url
             # notice_list
             result = Return_Module.ReturnPattern.success_text\
-            ("comment blank",items = comment_dict, created_time = created_time, pageable = pageable, notice_data = notice_list[0])
+            ("show comment list(from notice page)",items = comment_dict, created_time = created_time, pageable = pageable, notice_data = notice_list[0])
             # result = {"payload":{"items":comment_dict, "created_time":created_time, "pageable":pageable, "notice_data":notice_list[0]}}
             # print(dict)
             return Response(result)
         else:
             result = Return_Module.ReturnPattern.success_text\
-            ("comment blank",items = comment_dict, created_time = created_time, pageable = pageable)
+            ("show comment list",items = comment_dict, created_time = created_time, pageable = pageable)
             # print(dict)
             return Response(result)
 
@@ -152,12 +191,32 @@ class CommentListView(APIView):
     def post(self, request, post_pk, format=None):
         post = Post.objects.get(pk = post_pk)
         user_myself = orm.get_myself(self,request)
-        request_data = Return_Module.string_to_dict(request.data)
+
+
+        # sending으로 안 묶여 있으면 에러 처리
+        try:
+            request_data = Return_Module.string_to_dict(request.data) #sending 파라미터에서 value 추출해서 dict 형태로 변형
+        except KeyError as e:
+            # print(f"key error: missing key name {e}") #에러 로그
+            result = Error_Module.ErrorHandling.none_bundle(req.request_bundle, e) #클라이언트에 보낼 에러 메시지
+            return Response(result,status = status.HTTP_400_BAD_REQUEST)
+
+        #필드에 필수 키가 있는지 확인 후 없을 경우 에러 반환
+        try:
+            for key in req.comment_create_keys:
+                request_data[key]
+        except KeyError as e:
+            error_dict = Error_Module.ErrorHandling.none_feild(req.comment_create_keys,request_data.keys(), e)
+            result = Return_Module.ReturnPattern.error_text(error_dict)
+            return Response(result,status = status.HTTP_400_BAD_REQUEST)
+        else:
+            contents = request_data[req.caption] #댓글의 내용
 
         # success
-        comment = Comment.objects.create(post = post, user=user_myself, contents=request_data['caption'])
-        if not post.user.email ==decodedPayload['id']:
+        comment = Comment.objects.create(post = post, user=user_myself, \
+        contents=request_data['caption'])
+        if not post.user.email ==user_myself.email:
             Notice.objects.create(receiver =post.user, comment = comment, kind = 22003)
         result = Return_Module.ReturnPattern.success_text\
-        ("success create",result=True)
+        (string_get.successful_creation,result=True)
         return Response(result)

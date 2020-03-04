@@ -14,9 +14,28 @@ class NoticeView(APIView):
 
 
     def get(self,request, format = None):
-        data = Return_Module.string_to_dict(request.GET) #sending으로 묶여서 오는 파라미터 데이터 추출
-        page = data['page'] #클라이언트에서 보내주는 page count
-        craeted_time = data['created_time'] #클라이언트에서 보내주는 최신 게시물 생성 날짜
+
+        request_data_key = ['page', 'created_time']
+        # sending으로 안 묶여 있으면 에러 처리
+        try:
+            request_data = Return_Module.string_to_dict(request.GET) #sending 파라미터에서 value 추출해서 dict 형태로 변형
+        except KeyError as e:
+            # print(f"key error: missing key name {e}") #에러 로그
+            result = Error_Module.ErrorHandling.none_bundle(req.request_bundle, e) #클라이언트에 보낼 에러 메시지
+            return Response(result,status = status.HTTP_400_BAD_REQUEST)
+
+        #필드에 필수 키가 있는지 확인 후 없을 경우 에러 반환
+        try:
+            for key in request_data_key:
+                request_data[key]
+        except KeyError as e:
+            error_dict = Error_Module.ErrorHandling.none_feild(request_data_key,request_data.keys(), e)
+            result = Return_Module.ReturnPattern.error_text(error_dict)
+            return Response(result,status = status.HTTP_400_BAD_REQUEST)
+        else:
+            page = request_data[request_data_key[0]] #클라이언트에서 보내주는 page count
+            created_time = request_data[request_data_key[1]] #클라이언트에서 보내주는 최신 게시물 생성 날짜
+
         string = request.headers["Authorization"]
         decodedPayload = jwt.decode(string[4:],None,None)
         user = User.objects.get(email = decodedPayload['id'])
@@ -26,8 +45,8 @@ class NoticeView(APIView):
 
         # 생성일 넘겨주는 부분
         notice_queryset = Notice.objects.filter(receiver = user).order_by('-id')[begin_item:last_index]\
-                    if craeted_time == ""\
-                    else Notice.objects.filter(receiver = user, created_date__lte=craeted_time).order_by('-id')[begin_item:last_index]
+                    if created_time == ""\
+                    else Notice.objects.filter(receiver = user, created_date__lte=created_time).order_by('-id')[begin_item:last_index]
         notice_list = list(notice_queryset.values())
         count = 0
         for obj in notice_queryset:
@@ -54,11 +73,11 @@ class NoticeView(APIView):
 
         pageable = False if len(notice_list) < 21 else True
 
-        created_time = str(notice_list[0]['created_date']) if craeted_time == "" else craeted_time
+        created_time = str(notice_list[0]['created_date']) if created_time == "" else created_time
         # home_serializers = HomeSerializer(notice_obj_cached[0:20],many=True)
 
         result = Return_Module.ReturnPattern.success_text\
-        ("show mypage", items = notice_list, created_time = created_time, pageable = pageable)
+        ("show notice list", items = notice_list, created_time = created_time, pageable = pageable)
 
         return Response(result,status=status.HTTP_200_OK)
 
@@ -66,8 +85,9 @@ class NoticeView(APIView):
 class NoticeDetailView(APIView):
 
     def get(self ,request ,pk ,format=None):
-        data = Return_Module.string_to_dict(request.GET)
+
         actions = {'return_posts':22001,'violation_posts':22004, "violation_comment":22005}
+
         notice = Notice.objects.get(pk = pk)
         kind = notice.kind
         if kind == actions['violation_posts']: #규칙위반 게시물
@@ -92,76 +112,15 @@ class NoticeDetailView(APIView):
             ("show notice", caption = caption)
             return Response(result)
 
+    @transaction.atomic
     def delete(self, request, pk, format=None):
         try:
             notice = Notice.objects.get(pk = pk)
-        except Exception as e:
-            result = Return_Module.ReturnPattern.success_text\
-            ("delete fail")
+        except Notice.DoesNotExist as e:
+            result = Return_Module.ReturnPattern.error_text(str(e))
             return Response(result, status = status.HTTP_404_NOT_FOUND)
         else:
             notice.delete()
             result = Return_Module.ReturnPattern.success_text\
             ("delete success", result = True)
             return Response(result)
-
-
-
-
-
-    # def retrieve(self, request, pk=None):
-    #     result_dict = {"success":12000,"report":12001,"failed 404":14040}
-    #     string = request.headers["Authorization"]
-    #     decodedPayload = jwt.decode(string[4:],None,None)
-    #     try:
-    #         posts = Post.objects.get(problem = False, is_active = True, pk = pk)
-    #     except Exception as e:
-    #         result = Return_Module.ReturnPattern.success_text\
-    #         ("posts_get fail",result=result_dict['failed 404'])
-    #         return Response(result, status = status.HTTP_404_NOT_FOUND)
-    #     report_all = Report.objects.all()
-    #     comment = Comment.objects.filter(post = posts)
-    #     report_comment = report_all.filter(reporter_id = decodedPayload['id'],comment__in = comment, handling = 3).values('comment_id')
-    #     report_post = report_all.filter(reporter_id = decodedPayload['id'], post = posts, handling = 1)
-    #     if report_post:
-    #         result = Return_Module.ReturnPattern.success_text\
-    #         ("reported posts",result = result_dict["report"])
-    #         return Response(result)
-    #     else:
-    #         serializers = PostDetailSerializer(posts)
-    #         user = User.objects.get(is_active = True, user_uid = decodedPayload["id"])
-    #         # print("posts" + str(posts))
-    #         # print("serial" + str(serializers.data))
-    #         comment_count = len(Comment.objects.filter(is_active = True,\
-    #         post_id = pk, is_problem = False).exclude(id__in= report_comment))
-    #
-    #         try:
-    #             like = PostLike.objects.get(post = posts, user = user)
-    #         # success
-    #         except PostLike.DoesNotExist:
-    #             like_checked = False
-    #         else:
-    #             like_checked = True
-    #
-    #         try:
-    #             scrap = Scrapt.objects.get(post = posts, user = user)
-    #         # success
-    #         except Scrapt.DoesNotExist:
-    #             scrap_checked = False
-    #         else:
-    #             scrap_checked = True
-    #
-    #         if serializers.data['user']['user_uid'] == decodedPayload["id"]:
-    #             myself = True
-    #         else:
-    #             myself = False
-    #
-    #         serial_dumps = Return_Module.jsonDumpsLoads(self,**serializers.data)
-    #         serial_dumps['comment'] = comment_count
-    #         serial_dumps['count'] = len(serializers.data['like_user'])
-    #         serial_dumps['like_checked'] = like_checked
-    #         serial_dumps['scrap_checked'] = scrap_checked
-    #         serial_dumps['myself'] = myself
-    #         result = Return_Module.ReturnPattern.success_text\
-    #         ("show posts detail success",**serial_dumps, result = result_dict["success"])
-    #         return Response(result)
