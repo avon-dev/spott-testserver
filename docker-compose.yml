@@ -29,3 +29,18 @@ services:
       - python3 manage.py runserver 0:8000
     volumes:
       - ./:/phopo/
+
+docker run -it --rm \
+    -p 8000:8000 \
+    --link db \
+    -e DJANGO_DB_HOST=db \
+    -e DJANGO_DEBUG=True \
+    project \
+    ./manage.py makemigrations ./manage.py migrate ./manage.py runserver 0:8000
+
+    docker run --rm \
+    --name db \
+    -e POSTGRES_DB=test1 \
+    -e POSTGRES_USER=projectuser \
+    -e POSTGRES_PASSWORD=password \
+    postgres

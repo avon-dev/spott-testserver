@@ -13,6 +13,7 @@ from testapp.assemble_view import tag_views
 from testapp.assemble_view import search_views
 from testapp.assemble_view import report_views
 from testapp.assemble_view import notice_views
+from testapp.assemble_view import html_views
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework.urlpatterns import format_suffix_patterns
@@ -22,6 +23,7 @@ from rest_framework import routers
 router = DefaultRouter(trailing_slash=False)#라우터 마지막에 / 제거
 
 router.register('posts', posts_views.PostViewSet, basename='posts')
+router.register('posts-recommendation', posts_views.PhopoRecommendationViewSet, basename='recommendation')
 router.register('recent', search_views.RecentSearchView, basename='recent')
 # router.register('comments', comment_views.CommentViewSet, basename='comments')
 
@@ -30,6 +32,9 @@ urlpatterns = [
 
     #이메일 인증
     path('account', account_views.AccountView.as_view()), #account로 바꾸기
+
+    #이메일 인증
+    path('social-account', account_views.SocialAccountView.as_view()), #account로 바꾸기
 
     #댓글
     path('posts/<int:post_pk>/comment', comment_views.CommentListView.as_view()),
@@ -58,7 +63,18 @@ urlpatterns = [
 
     # path('home/posts', home_views.Home.as_view()),
 
-    path('login', account_views.Login.as_view(), name='user'),
+
+    path('guide', html_views.guide, name='guide'),
+    path('guide-en', html_views.guideEn, name='guide-en'),
+    path('guide-cn', html_views.guideCn, name='guide-cn'),
+    path('personal-Information-processing-policy', html_views.personalInformationProcessingPolicy, name='personalInformationProcessingPolicy'),
+    path('location-based-service-terms-and-conditions', html_views.locationBasedServiceTermsAndConditions, name='locationBasedServiceTermsAndConditions'), ##위치정보
+    path('terms-and-conditions', html_views.termsAndConditions, name='termsAndConditions'), ##이용약관
+    path('first-notice', html_views.firstNotice, name='firstNotice'),
+    path('app-notices', html_views.AppNoticesView.as_view(), name='AppNotices'),
+    path('open-source', html_views.openSource, name='openSource'),
+
+    path('publickey', account_views.PublicKeyView.as_view(), name='public'),
     path('tag', tag_views.HashTagView.as_view(), name='tag'),
     path('users', user_views.UserView.as_view()),
     path('users/password', user_views.PasswordView.as_view()),

@@ -38,7 +38,7 @@ class NoticeView(APIView):
 
         string = request.headers["Authorization"]
         decodedPayload = jwt.decode(string[4:],None,None)
-        user = User.objects.get(email = decodedPayload['id'])
+        user = User.objects.get(user_uid = decodedPayload['user_uid'])
         #페이징
         begin_item = page
         last_index = page + 21
@@ -47,33 +47,49 @@ class NoticeView(APIView):
         notice_queryset = Notice.objects.filter(receiver = user).order_by('-id')[begin_item:last_index]\
                     if created_time == ""\
                     else Notice.objects.filter(receiver = user, created_date__lte=created_time).order_by('-id')[begin_item:last_index]
-        notice_list = list(notice_queryset.values())
+
+        notice_serial = NoticeSerializer(notice_queryset, many=True)
+        notice_list = notice_serial.data
         count = 0
         for obj in notice_queryset:
             if obj.kind == 22001:
                 notice_list[count]['post_image'] = obj.post.posts_image.url
                 notice_list[count]['reason'] = obj.post.get_handling_display()
+                notice_list[count]['reason_detail'] = obj.post.reason_detail
 
             elif obj.kind == 22002:#통과
                 notice_list[count]['post_image'] = obj.post.posts_image.url
+                notice_list[count]['post_id'] = obj.post.id
             elif obj.kind == 22003:#댓글 남김
                 notice_list[count]['comment_user_nick'] = obj.comment.user.nickname
-                notice_list[count]['comment_user_image'] = obj.comment.user.profile_image.url
+                if obj.comment.user.profile_image:
+                    print("트루")
+                    notice_list[count]['comment_user_image'] = obj.comment.user.profile_image.url
+                else:
+                    print("펄스")
+                    notice_list[count]['comment_user_image'] = None
                 notice_list[count]['post_id'] = obj.comment.post.id
                 notice_list[count]['post_image'] = obj.comment.post.posts_image.url
                 notice_list[count]['comment_user_id'] = obj.comment.user.id
             elif obj.kind == 22004:#규칙 위반 게시물
                 notice_list[count]['reason'] = obj.report.get_reason_display()
                 notice_list[count]['post_image'] = obj.report.post_url
+                notice_list[count]['reason_detail'] = obj.report.reason_detail
             else:
                 notice_list[count]['reason'] = obj.report.get_reason_display()
+                notice_list[count]['reason_detail'] = obj.report.reason_detail
             notice_list[count]['confirmation'] = True
             count += 1
         Notice.objects.filter(receiver = user).update(confirmation = True)
 
         pageable = False if len(notice_list) < 21 else True
 
-        created_time = str(notice_list[0]['created_date']) if created_time == "" else created_time
+        try:
+            notice_list[0]['created_date']
+        except IndexError as e:
+            pass
+        else:
+            created_time = str(notice_list[0]['created_date']) if created_time == "" else created_time
         # home_serializers = HomeSerializer(notice_obj_cached[0:20],many=True)
 
         result = Return_Module.ReturnPattern.success_text\

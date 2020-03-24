@@ -27,6 +27,17 @@ from django.utils.html import mark_safe
 from django.contrib.postgres.fields import JSONField
 
 class User(AbstractBaseUser, PermissionsMixin): #나중에 널 값 처리
+    basic = 9000
+    google = 9001
+    facebook = 9002
+
+
+    USER_TYPE = (
+        (basic, '이메일 유저'),
+        (google, '구글 유저'),
+        (facebook, '페이스북 유저')
+    )
+    user_type = models.IntegerField(default = basic, choices = USER_TYPE, verbose_name = '가입한 방식')
     user_uid = models.CharField(max_length=255, unique = True) #이메일 해싱 삭제를 했어 lwbvv@naver.com
     email = models.EmailField(_('email address'))
     password = models.CharField(_('password'), max_length=200)
@@ -42,7 +53,7 @@ class User(AbstractBaseUser, PermissionsMixin): #나중에 널 값 처리
     objects = UserManager()
     USEREMAIL_FIELD = 'email'
     USERNAME_FIELD = 'user_uid'
-    REQUIRED_FIELDS = []
+    REQUIRED_FIELDS = ['email']
 
     class Meta:
         verbose_name = _('user')
@@ -72,9 +83,6 @@ class User(AbstractBaseUser, PermissionsMixin): #나중에 널 값 처리
         # Simplest possible answer: All superusers are staff
         return self.is_superuser
 
-    def created_at_korean_time(self):
-        korean_timezone = timezone(settings.TIME_ZONE)
-        return self.created_at.astimezone(korean_timezone)
 
 # 스크랩을 취소 한다는건 해당 스크랩 테이블에서 레코드가 지워진다는 것을 뜻함
 # 게시물이 지워졌을 때 연결 돼 있는 해당 스크랩까지 지워지도록 구현
@@ -103,7 +111,15 @@ class Post(models.Model): #!내용(conents), !작성일, !수정일, !공개여�
         (bad_contents, '부적절한 내용'),
     )
 
+    basic_post = 200
+    admin_post = 201
+    KIND = (
+        (basic_post, '일반 게시물'),
+        (admin_post, '관리자 게시물'),
+    )
+
     user = models.ForeignKey(User,on_delete=models.CASCADE, related_name= 'get_user') #get_post로 변경
+    post_kind = models.IntegerField(default = basic_post ,choices = KIND ,verbose_name = '카테고리')
     posts_image = models.ImageField(upload_to = 'post') #R
     back_image = models.ImageField(upload_to = 'postb',null = True, blank = True) #R
     latitude = models.FloatField() #R
@@ -119,7 +135,9 @@ class Post(models.Model): #!내용(conents), !작성일, !수정일, !공개여�
     hashtag = models.ManyToManyField('HashTag', through='PostTag',related_name='get_hashtag')
     like_user = models.ManyToManyField('User', through = 'PostLike',related_name= 'get_like')
     comment = models.ManyToManyField('User', through='Comment',related_name='get_comment')
+    like_count = models.IntegerField(default = 0)
     scrap_users = models.ManyToManyField('User', through = 'Scrapt',related_name= 'get_scrap')
+    reason_detail = models.TextField(default = "",verbose_name = "반려 사유 작성란" ) #상세 사유
     #좋아요가 1000개 이상 넘어가면 카운트로 조회
     def __str__(self):
         return str(self.id)
@@ -129,8 +147,10 @@ class Post(models.Model): #!내용(conents), !작성일, !수정일, !공개여�
 
         image_tag.short_description = 'Image'
 
+    def user_email(self):
+        return f'{self.user.email}'  # Get Image url
 
-
+        user_email.short_description = 'user_email'
 
 
 # class UserData(models.Model):
@@ -207,6 +227,7 @@ class Report(models.Model):
     porno = 3
     steal = 4
 
+    no_problem = 0
     before_posts = 1
     after_posts = 2
     before_comment = 3
@@ -228,12 +249,12 @@ class Report(models.Model):
         (before_comment, '댓글 전'),
         (after_comment, '댓글 후'),
     )
-
-    reporter = models.ForeignKey(User, on_delete=models.CASCADE, to_field="user_uid", blank = True, null = True , related_name="%(app_label)s_%(class)s_reporter_related")
+    rel_name = "phopo_reports_post_related"
+    reporter = models.ForeignKey(User, on_delete=models.CASCADE, to_field = 'user_uid', blank = True, null = True , related_name="%(app_label)s_%(class)s_reporter_related")
     # post_owner = models.CharField(default = "null",max_length = 200) #삭제해도 됨
     # comment_owner = models.CharField(default = "null",max_length = 200) #삭제해도 됨
     post = models.ForeignKey(Post, on_delete=models.CASCADE, blank = True, \
-    null = True, related_name="%(app_label)s_%(class)s_post_related")
+    null = True, related_name=rel_name)
     comment = models.ForeignKey(Comment, on_delete=models.CASCADE, blank = True,\
     null = True, related_name="%(app_label)s_%(class)s_comment_related")
 
@@ -254,6 +275,11 @@ class Report(models.Model):
 
         image_tag.short_description = 'Image'
 
+
+    def reporter_email(self):
+        return f'{self.reporter_email}'  # Get Image url
+
+        reporter_email.short_description = 'reporter_email'
 
 class Notice(models.Model):
     picture_return = 22001
@@ -276,3 +302,14 @@ class Notice(models.Model):
     kind = models.IntegerField(choices = KIND_CHOICES, verbose_name = '알림 종류')
     confirmation = models.BooleanField(default = False, verbose_name = '확인')
     created_date= models.DateTimeField(auto_now_add=True)
+
+
+class AppNotices(models.Model):
+
+    title = models.CharField(unique = True, max_length=250, verbose_name = '공지사항 타이틀')
+    created_date = models.DateTimeField(auto_now_add=True,)
+    contents_url = models.CharField(max_length = 200, verbose_name = '공지사항 내용')
+
+
+    def __str__(self):
+        return self.title

@@ -17,35 +17,42 @@ class UserView(BaseAPIView):
         # super().get(request)
         string = request.headers["Authorization"]
         decodedPayload = jwt.decode(string[4:],None,None)
-        user = User.objects.get(user_uid = decodedPayload["id"])
+        user = User.objects.get(user_uid = decodedPayload["user_uid"])
         serializers = MyProfileSerializer(user)
         result = Return_Module.ReturnPattern.success_text("user info get",result=True, **serializers.data)
         return Response(result)
 
+
+
+    ####회원 프로필 수정( 프로필 이미지, 닉네임)
     @transaction.atomic
     def patch (self, request, format=None):
-        print(str(request.data))
-        print(str(request.FILES))
         string = request.headers["Authorization"]
         decodedPayload = jwt.decode(string[4:],None,None)
-        user = User.objects.get(user_uid = decodedPayload["id"])
+        user = User.objects.get(user_uid = decodedPayload["user_uid"])
+
         try:
-            request_data = Return_Module.multi_string_to_dict(request.data)
+            request_data = Return_Module.string_to_dict(request.data)
         except KeyError as e:
-            user.profile_image = request.FILES['profile_image']
+            print(str(request.FILES.get('profile_image',None)))
+            user.profile_image = request.FILES.get('profile_image',None)
             user.save()
             result = Return_Module.ReturnPattern.success_text('update success profile',result=True)
             return Response(result)
         else:
-
             if 'profile_image' in request.FILES.keys() and 'nickname' in request_data.keys():
                 user.profile_image = request.FILES['profile_image']
                 user.nickname = request_data['nickname']
                 user.save()
                 is_key = True
             elif 'nickname' in request_data.keys():
-                user.nickname = request_data['nickname']
-                user.save()
+                nickname = User.objects.filter(nickname = request_data['nickname']).values('nickname')
+                if nickname:
+                    result = Return_Module.ReturnPattern.success_text('update fail profile(duplication nickname)',result=False)
+                    return Response(result)
+                else:
+                    user.nickname = request_data['nickname']
+                    user.save()
             else:
                 result = Return_Module.ReturnPattern.success_text('update fail profile',result=False)
                 return Response(result)
@@ -60,8 +67,11 @@ class UserView(BaseAPIView):
     def delete(self, request, format=None):
         string = request.headers["Authorization"]
         decodedPayload = jwt.decode(string[4:],None,None)
-        user = User.objects.get(user_uid = decodedPayload["id"])
+        user = User.objects.get(user_uid = decodedPayload["user_uid"])
         user.is_active = False
+        Post.objects.filter(user = user).update(is_active = False)
+        Comment.objects.filter(user = user).update(is_active = False)
+        Notice.objects.filter()
         user.save()
         result = Return_Module.ReturnPattern.success_text('delete success profile',result=True)
         return Response(result)
@@ -76,9 +86,9 @@ class PasswordView(APIView):
         request_data = Return_Module.string_to_dict(request.GET)
         string = request.headers["Authorization"]
         decodedPayload = jwt.decode(string[4:],None,None)
-        user = User.objects.get(is_active = True, user_uid = decodedPayload["id"])
+        user = User.objects.get(is_active = True, user_uid = decodedPayload["user_uid"])
 
-        if check_password(request_data['password'], user.password):
+        if check_password(security.RSAPublicKey().out_password(request_data["password"]), user.password):
             result = Return_Module.ReturnPattern.success_text("equals password",result=True)
             return Response(result, status = status.HTTP_200_OK)
         else:
@@ -94,13 +104,13 @@ class PasswordView(APIView):
         decodedPayload = jwt.decode(string[4:],None,None)
         try:
             result = Return_Module.ReturnPattern.success_text("update success password",result=True)
-            user = User.objects.get(is_active = True, user_uid = decodedPayload["id"])
+            user = User.objects.get(is_active = True, user_uid = decodedPayload["user_uid"])
         except Exception as e:
             result = Return_Module.ReturnPattern.success_text("update fail password",result=False)
             return Response(result, status = status.HTTP_200_OK)
 
         else:
-            user.set_password(request_data["password"])
+            user.set_password(security.RSAPublicKey().out_password(request_data["password"]))
             user.save()
             return Response(result, status = status.HTTP_200_OK)
 

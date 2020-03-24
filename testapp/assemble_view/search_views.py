@@ -94,7 +94,7 @@ class RecentSearchView(viewsets.ViewSet):
         tag = HashTag.objects.all()
         list = []
         try:
-            myself = user.get(user_uid = decodedPayload['id'])
+            myself = user.get(user_uid = decodedPayload['user_uid'])
         except User.DoesNotExist as e:
             result = Return_Module.ReturnPattern.error_text(str(e))
             return Response(result,status = status.HTTP_404_NOT_FOUND)
@@ -102,10 +102,23 @@ class RecentSearchView(viewsets.ViewSet):
         count = 0
         for recent in myself.recent_search:
             if recent['action'] == 1202:
-                list.append(SearchNameSerializer(user.get(pk = recent['user_pk'])).data)
-                list[count]['is_tag'] = False
+                try:
+                    user.get(pk = recent['user_pk'])
+                except Exception as e:
+                    del myself.recent_search[count]
+                    myself.save()
+                else:
+                    list.append(SearchNameSerializer(user.get(pk = recent['user_pk'])).data)
+                    list[count]['is_tag'] = False
+
             else:
-                list.append(SearchTagSerializer(tag.get(name = recent['tag_name'])).data)
+                try:
+                    tag.get(name = recent['tag_name'])
+                except Exception as e:
+                    del myself.recent_search[count]
+                    myself.save()
+                else:
+                    list.append(SearchTagSerializer(tag.get(name = recent['tag_name'])).data)
             count += 1
 
         result = Return_Module.ReturnPattern.success_text\
@@ -122,8 +135,7 @@ class RecentSearchView(viewsets.ViewSet):
         string = request.headers["Authorization"]
         decodedPayload = jwt.decode(string[4:],None,None)
         request_data = Return_Module.string_to_dict(request.data)
-        user = User.objects.get(user_uid = decodedPayload['id'])
-        print(decodedPayload['id'])
+        user = User.objects.get(user_uid = decodedPayload['user_uid'])
 
 
         user.recent_search.insert(0,request_data)
@@ -159,7 +171,7 @@ class RecentSearchView(viewsets.ViewSet):
         position = int(pk)
         string = request.headers["Authorization"]
         decodedPayload = jwt.decode(string[4:],None,None)
-        user = User.objects.get(user_uid = decodedPayload['id'])
+        user = User.objects.get(user_uid = decodedPayload['user_uid'])
 
         if position == -1:
             user.recent_search.clear()

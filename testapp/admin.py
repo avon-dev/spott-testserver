@@ -12,7 +12,7 @@ class PhotoInline(admin.TabularInline):
 
 
 class UserAdmin(admin.ModelAdmin):
-    list_display = ['pk','user_uid', 'joined_date', 'last_login', 'is_staff','is_active',]
+    list_display = ['pk','email','nickname', 'joined_date','is_staff','is_active',]
 
 
 class PostsAdmin(admin.ModelAdmin):
@@ -27,46 +27,52 @@ class PostsAdmin(admin.ModelAdmin):
     #     PhotoInline,
     # ]
 
+    #부정확한 위치
     @transaction.atomic
     def action_bad_location(modeladmin, request, queryset):
-        print(f"asdasdasdasdasd{request}")
+
         for obj in queryset:
             obj.handling = Post.bad_location
             obj.problem = True
             obj.is_active = False
+            obj.reason_detail = "부정확한 위치정보"
             obj.save()
             Notice.objects.create(receiver_id = obj.user.id, post = obj, \
-            kind = Notice.picture_return, reason_detail = string_get.bad_location)
+            kind = Notice.picture_return)
         # __str__ : "위치정보"
         messages.success(request, "게시물 반려(부정확한 위치)")
 
+    #부적절한 사진
     @transaction.atomic
     def action_bad_image(modeladmin, request, queryset):
-        print(f"asdasdasdasdasd{request}")
+
         for obj in queryset:
             obj.handling = Post.bad_picture
             obj.problem = True
             obj.is_active = False
+            obj.reason_detail = "부적절한 사진"
             obj.save()
             Notice.objects.create(receiver_id = obj.user.id, post = obj,\
-             kind = 22001, reason_detail = string_get.bad_picture)
+             kind = Notice.picture_return)
         messages.success(request, "게시물 반려(부적절한 사진)")
 
+    #부적절한 내용
     @transaction.atomic
     def action_bad_caption(modeladmin, request, queryset):
-        print(f"asdasdasdasdasd{request}")
+
         for obj in queryset:
             obj.handling = Post.bad_contents
             obj.problem = True
             obj.is_active = False
+            obj.reason_detail = "부적절한 내용"
             obj.save()
             Notice.objects.create(receiver_id = obj.user.id, post = obj,\
-             kind = 22001, reason_detail = string_get.bad_caption)
+             kind = Notice.picture_return)
         messages.success(request, "게시물 반려(부적절한 내용)")
 
     @transaction.atomic
     def action_no_problem(modeladmin, request, queryset):
-        print(f"asdasdasdasdasd{request}")
+
         for obj in queryset:
             obj.handling = Post.no_problem
             obj.save()
@@ -90,7 +96,7 @@ class VillainInline(admin.StackedInline):
 #                     "음란물":"사진이나 내용에 음란성 내용이 포함되어 있습니다",\
 #                     "무단도용":"무단 도용 여부가 있는 게시글 입니다"}
 class ReportAdmin(admin.ModelAdmin):
-    list_display = ['image_post','reporter', 'post','post_caption','detail','comment_contents','handling']
+    list_display = ['image_post','reporter_email','comment' ,'post','post_caption','detail','comment_contents','handling']
     # list_display_links = ['pk', 'contents', 'views', 'problem', 'is_active']
     list_filter = ['reason','handling']
     search_fields = ['detail', 'post_caption','comment_contents' ]
@@ -100,11 +106,29 @@ class ReportAdmin(admin.ModelAdmin):
     save_on_top = True #저장 버튼 윗 쪽에도 생성
     autocomplete_fields = ['post']
 
+
+
     @transaction.atomic
     def save_model(self, request, obj, form, change):
-        post_obj = Post.objects.get(id = obj.post.id)
-        post_obj.problem = True
-        post_obj.save()
+
+        obj.handling = True
+        print(f"시작")
+        if not obj.comment:
+            post_obj = Post.objects.get(id = obj.post.id)
+            obj.handling = Report.after_posts
+            post_obj.problem = True
+            print(f"게시물")
+            Notice.objects.create(receiver = obj.post.user, report = obj, kind = Notice.violation_posts)
+            post_obj.save()
+        else:
+            print(f"코멘트")
+            comment_obj = Comment.objects.get(id = obj.comment.id)
+            print(f"코멘트{comment_obj}")
+            obj.handling = Report.after_comment
+            comment_obj.is_problem = True
+            Notice.objects.create(receiver = obj.comment.user, report = obj, kind = Notice.violation_comment)
+            comment_obj.save()
+        obj.save()
         print(f"request: {request} obj:{obj} , change: {change}")
         super(ReportAdmin, self).save_model(request, obj, form, change)
     # readonly_fields = ['user', 'posts_image', 'back_image', 'latitude', 'longitude', 'contents', 'modify_date']
@@ -137,7 +161,7 @@ class ReportAdmin(admin.ModelAdmin):
                 comment_obj = comment_set.get(id = obj.comment.id)
                 obj.handling = Report.after_comment
                 comment_obj.is_problem = True
-                Notice.objects.create(receiver = obj.post.user, report = obj, kind = Notice.violation_comment)
+                Notice.objects.create(receiver = obj.comment.user, report = obj, kind = Notice.violation_comment)
                 if obj.reason == Report.spam:
                     obj.reason_detail = string_get.spam
                 elif obj.reason == Report.slander:
@@ -160,13 +184,13 @@ class ReportAdmin(admin.ModelAdmin):
         for obj in queryset:
             if not obj.comment:
                 post_obj = post_set.get(id = obj.post.id)
-                obj.handling = Report.after_posts
+                obj.handling = Report.no_problem
                 post_obj.problem = False
                 post_obj.save()
             else:
                 comment_obj = comment_set.get(id = obj.comment.id)
                 comment_obj.is_problem = False
-                obj.handling = Report.after_comment
+                obj.handling = Report.no_problem
                 comment_obj.save()
             obj.save()
         messages.success(request, "문제 없는 게시물 신고 처리 완료")
@@ -192,7 +216,7 @@ class ReportAdmin(admin.ModelAdmin):
 
 
 class CommentAdmin(admin.ModelAdmin):
-    list_display = ['id','user','post','contents']
+    list_display = ['id','user','post','contents', 'created']
 
 admin.site.register(User, UserAdmin)
 # admin.site.register(UserData)
@@ -204,3 +228,4 @@ admin.site.register(PostLike)
 admin.site.register(Scrapt)
 admin.site.register(Report,ReportAdmin)
 admin.site.register(Notice)
+admin.site.register(AppNotices)

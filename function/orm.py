@@ -3,7 +3,7 @@ import jwt
 from django.db import transaction
 from django.db import IntegrityError
 from django.core.exceptions import ObjectDoesNotExist
-
+from django.contrib.auth.hashers import make_password, is_password_usable, check_password
 def tag_exist(self, tag_name):
     try:
         HashTag.objects.get(name = tag_name)
@@ -18,14 +18,14 @@ def get_myself(self, request):
     string = request.headers["Authorization"]
     decodedPayload = jwt.decode(string[4:],None,None)
 
-    return User.objects.get(email = decodedPayload['id'])
+    return User.objects.get(user_uid = decodedPayload['user_uid'])
 
 
 def get_user_pk(self, pk):
     return User.objects.get(pk = pk)
 
 def get_user_email(self, email):
-    return User.objects.get(email = email)
+    return User.objects.get(is_active = True, email = email, user_type = User.basic)
 
 
 
@@ -33,16 +33,26 @@ def get_user_email(self, email):
 ########################sign_up
 
 def get_user_with_nickname(self, nickname):
-    return User.objects.get(nickname=nickname)
+    return User.objects.get(is_active = True, nickname=nickname)
 
 
 
 def user_create(self, email, password, nickname):
     user = User.objects.create(email = email\
-    , user_uid = email\
+    , user_uid = make_password(email)\
     , password = password\
     , nickname = nickname)
-    # user.user_uid = make_password(request_data["user_uid"])
+    user.set_password(password)
+    user.save()
+    return True
+
+
+def social_user_create(self, email, password, nickname, type):
+    user = User.objects.create(email = email\
+    , user_uid = make_password(email)\
+    , password = password\
+    , nickname = nickname\
+    , user_type = type)
     user.set_password(password)
     user.save()
     return True

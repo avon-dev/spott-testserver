@@ -36,14 +36,23 @@ class CommentView(APIView):
             result = json.dumps(result)
             return Response(result)
         else:
-            comment.is_active = False
-            comment.save()
-            result = json.dumps(result)
-            return Response(result)
+            try:
+                notice = Notice.objects.get(comment = comment, kind = Notice.created_comment)
+            except Notice.DoesNotExist as e:
+                comment.is_active = False
+                comment.save()
+                result = json.dumps(result)
+                return Response(result)
+            else:
+                comment.is_active = False
+                notice.delete()
+                comment.save()
+                result = json.dumps(result)
+                return Response(result)
 
     @transaction.atomic
     def patch(self, request, post_pk, pk, format=None):
-        my_email = req.my_email(self, request)
+        my_user_uid = req.my_user_uid(self, request)
 
         # sending으로 안 묶여 있으면 에러 처리
         try:
@@ -66,7 +75,7 @@ class CommentView(APIView):
         (string_get.successful_update,result=True)
 
         try:
-            user = User.objects.get(email = my_email)
+            user = User.objects.get(user_uid = my_user_uid)
             comment = Comment.objects.get(is_active = True,pk = pk, user_id = user.id)
         except ObjectDoesNotExist:
             result['message'] = string_get.update_failed
@@ -118,15 +127,16 @@ class CommentListView(APIView):
 
 
 
-        my_email = req.my_email(self, request)
+        my_user_uid = req.my_user_uid(self, request)
 
 
         #페이징 넘버
         begin_item = page
         last_index = page + 21
 
+
         comment = Comment.objects.all()
-        report = Report.objects.filter(reporter_id = my_email,\
+        report = Report.objects.filter(reporter_id = my_user_uid,\
         comment__in = comment, handling = Report.before_comment).values('comment_id')
 
         comment = comment.filter(is_active = True,\
@@ -144,12 +154,26 @@ class CommentListView(APIView):
 
         try:
             comment_created_time = comment_obj_cached[0].created
-
-        except IndexError:
-            result = Return_Module.ReturnPattern.success_text\
-            ("comment blank",result=False)
-            return Response(result)
-
+        except IndexError as e:
+            if action == req.notice_to_comment:
+                post = Post.objects.filter(id=post_pk)
+                comment_data = list(post.values('user', 'contents', "created"))
+                comment_data[0]['user_nickname'] = post[0].user.nickname
+                if post[0].user.profile_image:
+                    print("트루")
+                    comment_data[0]['user_profile_image'] = post[0].user.profile_image.url
+                else:
+                    print("펄스")
+                    comment_data[0]['user_profile_image'] = None
+                comment_data[0]['created'] = comment_data[0]['created'].strftime("%Y-%m-%dT%H:%MZ")
+                result = Return_Module.ReturnPattern.success_text\
+                ("comment blank",notice_data = comment_data[0],items = [], created_time = "", pageable = False)
+                return Response(result)
+            else:
+                post = Post.objects.filter(id=post_pk)
+                result = Return_Module.ReturnPattern.success_text\
+                ("comment blank",result=False)
+                return Response(result)
 
         #데이터 베이스 안의 정보와 비교가 안 돼 str을 이용해 스트링으로 변환을 해 주었다.
         created_time = str(comment_created_time) if craeted_time == "" else craeted_time
@@ -164,20 +188,28 @@ class CommentListView(APIView):
         comment_dict = json.loads(comment_dump)
         count = 0
         for data in comment_dict:
-            if data['user']['user_uid'] == my_email:
+            print(f'comment data: {data}')
+            if data['user']['user_uid'] == my_user_uid:
                 comment_dict[count]['myself'] = True
             else:
                 comment_dict[count]['myself'] = False
             count = count + 1
 
         if action == req.notice_to_comment:
+            print("노티피케이션에서 들어오는 부분")
             post = Post.objects.filter(id=post_pk)
             notice_list = list(post.values('user', 'contents', "created"))
             notice_list[0]['user_nickname'] = post[0].user.nickname
-            notice_list[0]['user_profile_image'] = post[0].user.profile_image.url
+            if post[0].user.profile_image:
+                print("트루")
+                notice_list[0]['user_profile_image'] = post[0].user.profile_image.url
+            else:
+                print("펄스")
+                notice_list[0]['user_profile_image'] = None
+            notice_list[0]['created'] = notice_list[0]['created'].strftime("%Y-%m-%dT%H:%MZ")
             # notice_list
             result = Return_Module.ReturnPattern.success_text\
-            ("show comment list(from notice page)",items = comment_dict, created_time = created_time, pageable = pageable, notice_data = notice_list[0])
+            ("show comment list(from notice page)",items = comment_dict,result = True ,created_time = created_time, pageable = pageable, notice_data = notice_list[0])
             # result = {"payload":{"items":comment_dict, "created_time":created_time, "pageable":pageable, "notice_data":notice_list[0]}}
             # print(dict)
             return Response(result)
@@ -216,7 +248,7 @@ class CommentListView(APIView):
         comment = Comment.objects.create(post = post, user=user_myself, \
         contents=request_data['caption'])
         if not post.user.email ==user_myself.email:
-            Notice.objects.create(receiver =post.user, comment = comment, kind = 22003)
+            Notice.objects.create(receiver =post.user, post = post ,comment = comment, kind = 22003)
         result = Return_Module.ReturnPattern.success_text\
         (string_get.successful_creation,result=True)
         return Response(result)
