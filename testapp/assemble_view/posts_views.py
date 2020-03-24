@@ -240,7 +240,7 @@ class PostViewSet(viewsets.ViewSet):
             contents = contents,\
             posts_image = posts_image,\
             back_image = back_image,\
-            handling = Post.no_problem,\
+            handling = Post.before_confirmation,\
             is_public = True)
 
         result = Return_Module.ReturnPattern.success_text\

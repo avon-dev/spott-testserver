@@ -243,11 +243,11 @@ class Report(models.Model):
 
 
     HANDLING_CHOICES = (
-        (0, '신고 x'),
-        (before_posts, '게시물 전'),
-        (after_posts, '게시물 후'),
-        (before_comment, '댓글 전'),
-        (after_comment, '댓글 후'),
+        (no_problem, '문제 없음'),
+        (before_posts, '게시물 처리 전'),
+        (after_posts, '게시물 처리 후'),
+        (before_comment, '댓글 처리 전'),
+        (after_comment, '댓글 처리 후'),
     )
     rel_name = "phopo_reports_post_related"
     reporter = models.ForeignKey(User, on_delete=models.CASCADE, to_field = 'user_uid', blank = True, null = True , related_name="%(app_label)s_%(class)s_reporter_related")
