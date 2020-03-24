@@ -1,3 +1,3 @@
 Phopo Server
 ==
-server
+test
