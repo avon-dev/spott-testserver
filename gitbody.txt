@@ -1,0 +1,13 @@
+serialize.h 예외 처리를 간략화한다
+
+  serialize.h stream 구현과 관련된 메소드에서 'state'와 'exceptmask'를
+  삭제한다.
+
+  exceptmask는 언제나 'failbit'을 포함하고, setstate는 언제나 bits = failbit
+  과 함께 호출되며 이 모든 것은 즉각적으로 예외를 발생시킨다. 이 변수들을 삭제하고
+  setstate가 즉각적으로 예외를 발생시키게 바꾼다. (물론 몇몇 죽은 코드도 지운다)
+
+  그 결과 good()은 실패 후 절대 도달할 수 없고 (딱 두 군데서 호출되는데 한 곳은
+  테스트 안임) 이것은 단순히 !eof()로 대체할 수 있다.
+
+  fail(), clear(n),exceptions()은 전혀 호출되지 않는다. 해당 요소들은 삭제한다

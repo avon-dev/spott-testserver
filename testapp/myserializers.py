@@ -64,11 +64,11 @@ class TestSerializer(serializers.ModelSerializer):
 
 
 class PostSerializer(serializers.ModelSerializer):
+    # created = serializers.DateTimeField(format="%Y-%m-%dT%H:%MZ")
     class Meta:
         model = Post
-        fields = ('id' ,'posts_image', 'latitude', 'longitude',)
+        fields = ('id' ,'posts_image', 'latitude', 'longitude','like_count', 'post_kind')
         # read_only_fields = ('created_at',)
-
 
 class PostAllSerializer(serializers.ModelSerializer):
     class Meta:
@@ -87,7 +87,7 @@ class PostsContentsSerializer(serializers.ModelSerializer):
 class UserProfile(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id','user_uid','nickname','profile_image',)
+        fields = ('id','email','nickname','profile_image',)
 
 class HashTagSerializer(serializers.ModelSerializer):
     class Meta:
@@ -106,14 +106,6 @@ class PostDetailSerializer(serializers.ModelSerializer):
 
 
 ##############################################
-
-class MyUserSerializer(serializers.ModelSerializer):
-    # user = UserProfile(read_only=True)
-    class Meta:
-        model = User
-        # fields=('__all__')
-        fields = ('email','nickname','profile_image','is_public')
-        # exclude = ('modify_date','delete_date','is_active','problem','report_date','report')
 
 class MypageSerializer(serializers.ModelSerializer):
     # user = UserProfile(read_only=True)
@@ -162,7 +154,7 @@ class MyUserCommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         # fields=('__all__')
-        fields = ('id','nickname','profile_image','user_uid')
+        fields = ('id','nickname','profile_image','user_uid', 'email')
         # exclude = ('modify_date','delete_date','is_active','problem','report_date','report')
 
 
@@ -212,3 +204,28 @@ class MyUserSerializer(serializers.ModelSerializer):
         fields = ('email','nickname','profile_image','is_public')
         # exclude = ('modify_date','delete_date','is_active','problem','report_date','report')
 ############################유저 프로필 시리얼라이징
+class MyProfileSerializer(serializers.ModelSerializer):
+    # user = UserProfile(read_only=True)
+    class Meta:
+        model = User
+        # fields=('__all__')
+        fields = ('email','nickname','profile_image','is_public', 'user_type')
+        # exclude = ('modify_date','delete_date','is_active','problem','report_date','report')
+
+class NoticeSerializer(serializers.ModelSerializer):
+    # user = UserProfile(read_only=True)
+    class Meta:
+        model = Notice
+        # fields=('__all__')
+        fields = ('__all__')
+        # exclude = ('modify_date','delete_date','is_active','problem','report_date','report')
+
+
+
+class AppNoticeSerializer(serializers.ModelSerializer):
+    # user = UserProfile(read_only=True)
+    class Meta:
+        model = AppNotices
+        # fields=('__all__')
+        fields = ('__all__')
+        # exclude = ('modify_date','delete_date','is_active','problem','report_date','report')

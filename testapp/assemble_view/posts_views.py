@@ -30,6 +30,13 @@ class PostViewSet(viewsets.ViewSet):
         else:
             action = request_data[actions[0]] #####수정
 
+
+        string = request.headers["Authorization"]
+        decodedPayload = jwt.decode(string[4:],None,None)
+        user = User.objects.get(is_active = True, user_uid = decodedPayload["user_uid"])
+        report = Report.objects.filter(handling = Report.before_posts, reporter= user)
+
+
         if action == req.show_posts_home:
 
             posts_show_list_keys = ["created_time", "page"]
@@ -52,23 +59,36 @@ class PostViewSet(viewsets.ViewSet):
 
             #페이징
             begin_item = page
-            last_index = page + 20
-
+            last_index = page + 30
+            print(Report.rel_name)
             #생성일 넘겨주는 부분
-            posts_obj = Post.objects.filter(handling = 22001, is_active = True, problem = False, is_public = True).order_by('-id')[begin_item:last_index]\
-                        if craeted_time == ""\
-                        else Post.objects.filter(handling = 22001, is_active = True, problem = False, is_public = True, created__lte=craeted_time).order_by('-id')[begin_item:last_index]
 
+            posts_obj = Post.objects.filter(handling = Post.no_problem, is_active = True,problem = False, is_public = True, post_kind = Post.basic_post)\
+                        .exclude(phopo_reports_post_related__in = report)\
+                        .order_by('-id')[begin_item:last_index]\
+                        if craeted_time == ""\
+                        else Post.objects.filter(handling = Post.no_problem, is_active = True, problem = False,\
+                         is_public = True, created__lte=craeted_time, post_kind = Post.basic_post).\
+                         exclude(phopo_reports_post_related__in = report).\
+                         order_by('-id')[begin_item:last_index]
+# .exclude(id = report_post)\
             posts_obj_cached = posts_obj
 
-            pageable = False if posts_obj_cached.count() < 20 else True
+            pageable = False if posts_obj_cached.count() < 30 else True
 
-            created_time = str(posts_obj_cached[0].created) if craeted_time == "" else craeted_time
-            home_serializers = HomeSerializer(posts_obj_cached[0:19],many=True)
+            try:
+                created_time = str(posts_obj_cached[0].created) if craeted_time == "" else craeted_time
+            except IndexError as e:
+                result = Return_Module.ReturnPattern.success_text\
+                ("empty list",items = [], created_time = "", pageable = pageable)
+                return Response(result,status=status.HTTP_200_OK)
+            else:
+                home_serializers = HomeSerializer(posts_obj_cached[0:29],many=True)
+                result = Return_Module.ReturnPattern.success_text\
+                ("show posts list", items = home_serializers.data, created_time = created_time, pageable = pageable)
+                return Response(result,status=status.HTTP_200_OK)
 
-            result = Return_Module.ReturnPattern.success_text\
-            ("show posts list", items = home_serializers.data, created_time = created_time, pageable = pageable)
-            return Response(result,status=status.HTTP_200_OK)
+
         else:
 
             posts_show_list_keys = ["lat_ne", "lat_sw", "lng_ne", "lng_sw" ]
@@ -95,8 +115,10 @@ class PostViewSet(viewsets.ViewSet):
                 lat_sw = request_data[posts_show_list_keys[1]]
                 lng_sw = request_data[posts_show_list_keys[3]]
 
-            posts_data = Post.objects.filter(handling = 22001 ,is_active = True, problem = False, is_public = True, latitude__range=[lat_sw,lat_ne],longitude__range=[lng_sw,lng_ne]).\
-            order_by('-id')
+            posts_data = Post.objects.filter(handling = 22001 ,is_active = True, problem = False, \
+            is_public = True, latitude__range=[lat_sw,lat_ne],longitude__range=[lng_sw,lng_ne]).\
+            exclude(phopo_reports_post_related__in = report).\
+            order_by('-like_count')
             serializers = PostSerializer(posts_data, many = True)
             result = Return_Module.ReturnPattern.success_list_text\
             ("show posts list(lat,long)", *serializers.data)
@@ -108,7 +130,10 @@ class PostViewSet(viewsets.ViewSet):
         string = request.headers["Authorization"]
         decodedPayload = jwt.decode(string[4:],None,None)
 
+        user = User.objects.get(is_active = True, user_uid = decodedPayload["user_uid"]) #나중에 에러처리 넣어야됨
+
         try:
+
             posts = Post.objects.get(problem = False, is_active = True, pk = pk)
         except Post.DoesNotExist as e:
             result = Return_Module.ReturnPattern.error_text(str(e))
@@ -116,16 +141,18 @@ class PostViewSet(viewsets.ViewSet):
 
         report_all = Report.objects.all()
         comment = Comment.objects.filter(post = posts)
-        report_comment = report_all.filter(reporter_id = decodedPayload['id'],comment__in = comment, handling = Report.before_comment).values('comment_id')
-        report_post = report_all.filter(reporter_id = decodedPayload['id'], post = posts, handling = Report.before_posts)
+        report_comment = report_all.filter(reporter_id = decodedPayload['user_uid'],comment__in = comment, handling = Report.before_comment).values('comment_id')
+        report_post = report_all.filter(reporter_id = decodedPayload['user_uid'], post = posts, handling = Report.before_posts)
+        print(f'레포트 코멘트: {report_comment}')
+        print(f'레포트 포스트: {report_post}')
 
-        if report_post:
+        if report_post:#내가 신고 한 게시물일 경우
             result = Return_Module.ReturnPattern.success_text\
             ("reported posts",result = result_dict["report"])
             return Response(result)
         else:
             serializers = PostDetailSerializer(posts)
-            user = User.objects.get(is_active = True, user_uid = decodedPayload["id"])
+            user = User.objects.get(is_active = True, user_uid = decodedPayload["user_uid"])
             # print("posts" + str(posts))
             # print("serial" + str(serializers.data))
             comment_count = len(Comment.objects.filter(is_active = True,\
@@ -147,17 +174,18 @@ class PostViewSet(viewsets.ViewSet):
             else:
                 scrap_checked = True
 
-            if serializers.data['user']['user_uid'] == decodedPayload["id"]:
+            if serializers.data['user']['email'] == user.email:
                 myself = True
             else:
                 myself = False
 
             serial_dumps = Return_Module.jsonDumpsLoads(self,**serializers.data)
             serial_dumps['comment'] = comment_count
-            serial_dumps['count'] = len(serializers.data['like_user'])
+            serial_dumps['count'] = serializers.data['like_count']
             serial_dumps['like_checked'] = like_checked
             serial_dumps['scrap_checked'] = scrap_checked
             serial_dumps['myself'] = myself
+            serial_dumps['is_superuser'] = user.is_superuser
             result = Return_Module.ReturnPattern.success_text\
             ("show posts detail success",**serial_dumps, result = result_dict["success"])
             return Response(result)
@@ -193,14 +221,28 @@ class PostViewSet(viewsets.ViewSet):
             back_image = request.FILES.get('back_image',None)
 
         # testdd = test.objects.create(latitude = request_data["latitude"] ,testfield = request_data["testfield"], photo = request.FILES["photo"], photo2 = request.FILES["photo2"], dummy = request_data["dummy"])
-        user = User.objects.get(user_uid=decodedPayload["id"])
-        posts = Post.objects.create(user = user,\
-        latitude = lat,\
-        longitude = lng,\
-        contents = contents,\
-        posts_image = posts_image,\
-        back_image = back_image,\
-        is_public = True)
+        user = User.objects.get(user_uid=decodedPayload["user_uid"])
+
+        if user.is_superuser:
+            posts = Post.objects.create(user = user,\
+            post_kind = Post.admin_post,\
+            latitude = lat,\
+            longitude = lng,\
+            contents = contents,\
+            posts_image = posts_image,\
+            back_image = back_image,\
+            handling = Post.no_problem,\
+            is_public = True)
+        else:
+            posts = Post.objects.create(user = user,\
+            latitude = lat,\
+            longitude = lng,\
+            contents = contents,\
+            posts_image = posts_image,\
+            back_image = back_image,\
+            handling = Post.before_confirmation,\
+            is_public = True)
+
         result = Return_Module.ReturnPattern.success_text\
         ("create success",success=True)
 
@@ -212,18 +254,17 @@ class PostViewSet(viewsets.ViewSet):
 
 
         for tag_name in hash_tag_name_list:
-            try:
-                hash_tag_list = HashTag.objects.create(name = tag_name)
-            except  IntegrityError:
-                hash_tag_list = HashTag.objects.get(name = tag_name)
-                PostTag.objects.create(post = posts, tag = hash_tag_list)
-                hash_tag_list.count += 1
-                hash_tag_list.save()
-                # return Response("ex")
+            tag_exist = orm.tag_exist(self, tag_name.lower())
+            if tag_exist:
+                hashTag_obj = HashTag.objects.get(name = tag_name.lower())
+                PostTag.objects.create(post = posts, tag = hashTag_obj)
+                hashTag_obj.count += 1
+                hashTag_obj.save()
             else:
-                PostTag.objects.create(post = posts, tag = hash_tag_list)
-                hash_tag_list.count += 1
-                hash_tag_list.save()
+                hashTag_obj = HashTag.objects.create(name = tag_name.lower())
+                PostTag.objects.create(post = posts, tag = hashTag_obj)
+                hashTag_obj.count += 1
+                hashTag_obj.save()
 
 
         return Response(result, status=status.HTTP_201_CREATED)
@@ -255,7 +296,7 @@ class PostViewSet(viewsets.ViewSet):
 
         string = request.headers["Authorization"]
         decodedPayload = jwt.decode(string[4:],None,None)
-        user = User.objects.get(user_uid = decodedPayload["id"])
+        user = User.objects.get(user_uid = decodedPayload["user_uid"])
         posts = Post.objects.get(pk=pk, user_id=user.id)
         serializers = PostsContentsSerializer(posts, data = contents, partial=True)
 
@@ -304,17 +345,17 @@ class PostViewSet(viewsets.ViewSet):
             # print(hash_tag_name_list)
 
             for tag_name in hash_tag_name_list:
-                tag_exist = orm.tag_exist(self, tag_name)
+                tag_exist = orm.tag_exist(self, tag_name.lower())
                 if tag_exist:
-                    hash_tag_list = HashTag.objects.get(name = tag_name)
-                    PostTag.objects.create(post = posts, tag = hash_tag_list)
-                    hash_tag_list.count += 1
-                    hash_tag_list.save()
+                    hashTag_obj = HashTag.objects.get(name = tag_name.lower())
+                    PostTag.objects.create(post = posts, tag = hashTag_obj)
+                    hashTag_obj.count += 1
+                    hashTag_obj.save()
                 else:
-                    HashTag.objects.create(name = tag_name)
-                    PostTag.objects.create(post = posts, tag = hash_tag_list)
-                    hash_tag_list.count += 1
-                    hash_tag_list.save()
+                    hashTag_obj = HashTag.objects.create(name = tag_name.lower())
+                    PostTag.objects.create(post = posts, tag = hashTag_obj)
+                    hashTag_obj.count += 1
+                    hashTag_obj.save()
             print("태그 처리 완료")
 
             if serializers.is_valid():
@@ -333,7 +374,7 @@ class PostViewSet(viewsets.ViewSet):
         decodedPayload = jwt.decode(string[4:],None,None)
 
         try:
-            user = User.objects.get(user_uid = decodedPayload["id"])
+            user = User.objects.get(user_uid = decodedPayload["user_uid"])
             posts = Post.objects.get(pk=pk, user_id=user.id)
         except ObjectDoesNotExist as e:
             result = Return_Module.ReturnPattern.error_text(str(e))
@@ -341,9 +382,9 @@ class PostViewSet(viewsets.ViewSet):
         else:
             result = Return_Module.ReturnPattern.success_text\
             ("delete success",result=True)
+            notice = Notice.objects.filter(post = posts, kind = Notice.created_comment).delete()
             posts.is_active = False
             posts.save()
-
 
             post_hash_list = PostTag.objects.filter(post = posts)#연결된 태그 조회
             hash_tag_list = HashTag.objects.all() #태그 테이블 데이터 불러오기
@@ -360,6 +401,61 @@ class PostViewSet(viewsets.ViewSet):
 
             post_hash_list.delete()
             return Response(result)
+
+
+
+
+
+
+class PhopoRecommendationViewSet(viewsets.ViewSet):
+    permission_classes = (IsAuthenticated,)
+
+
+    def list(self,request):
+
+        string = request.headers["Authorization"]
+        decodedPayload = jwt.decode(string[4:],None,None)
+        user = User.objects.get(is_active = True, user_uid = decodedPayload["user_uid"])
+
+        psot = Post.objects.filter(is_active = True, problem = False, is_public = True, post_kind = Post.admin_post).order_by('-id')
+
+
+
+        home_serializers = HomeSerializer(psot,many=True)
+        result = Return_Module.ReturnPattern.success_text\
+        ("show recommendation list", items = home_serializers.data)
+        return Response(result,status=status.HTTP_200_OK)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     # def create(self, request):
     #

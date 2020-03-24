@@ -23,7 +23,7 @@ class Like(APIView):
     def post(self, request, pk, format=None):
         string = request.headers["Authorization"]
         decodedPayload = jwt.decode(string[4:],None,None)
-        user = User.objects.get(user_uid = decodedPayload["id"])
+        user = User.objects.get(user_uid = decodedPayload["user_uid"])
 
         try:
             post = Post.objects.get(pk = pk)
@@ -38,6 +38,9 @@ class Like(APIView):
         # success
         except PostLike.DoesNotExist:
             like = PostLike.objects.create(post = post, user=user)
+            print("asdasd")
+            post.like_count += 1
+            post.save()
             return Response(result)
         else:
             result = json.loads(result)
@@ -62,7 +65,7 @@ class Like(APIView):
         #접속한 유저의 id 가져오기
         string = request.headers["Authorization"]
         decodedPayload = jwt.decode(string[4:],None,None)
-        user = User.objects.get(user_uid = decodedPayload["id"])
+        user = User.objects.get(user_uid = decodedPayload["user_uid"])
 
         result = Return_Module.ReturnPattern.success_text\
         ("success delete",result=True,count=int(-1))
@@ -77,4 +80,6 @@ class Like(APIView):
             return Response(result)
         else:
             like.delete()
+            post.like_count -= 1
+            post.save()
             return Response(result)

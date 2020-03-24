@@ -74,7 +74,7 @@ class UserMypageViewSet(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request, pk, format=None):
-        my_email = req.my_email(self, request)
+        my_user_uid = req.my_user_uid(self, request)
         action_search = 1201
         action_user_mypage = 1202
         request_data_key = ['action']
@@ -101,11 +101,16 @@ class UserMypageViewSet(APIView):
 
         user = orm.get_user_pk(self, pk)
 
+        string = request.headers["Authorization"]
+        decodedPayload = jwt.decode(string[4:],None,None)
+        my_id = User.objects.get(is_active = True, user_uid = decodedPayload["user_uid"])
+        report = Report.objects.filter(handling = Report.before_posts, reporter= my_id)
 
-        myself = True if my_email == user.user_uid else False #불러올 계정과 로그인 유저가 같으면 true 다르면 false 반환
+        myself = True if my_user_uid == user.user_uid else False #불러올 계정과 로그인 유저가 같으면 true 다르면 false 반환
 
-        post = Post.objects.filter(handling = Post.no_problem, is_active = True, problem = False, user = user).order_by('-id')\
-        if myself else Post.objects.filter(handling = Post.no_problem, is_public = True, is_active = True, problem = False, user = user).order_by('-id')
+        post = Post.objects.filter(handling = Post.no_problem, is_active = True, problem = False, user = user).exclude(phopo_reports_post_related__in = report).order_by('-id')\
+        if myself else Post.objects.filter(handling = Post.no_problem, is_public = True, is_active = True, problem = False, user = user).exclude(phopo_reports_post_related__in = report).order_by('-id')
+
 
         post_serializers = MypageSerializer(post,many=True)
         user_serializers = MyUserSerializer(user)
@@ -119,7 +124,6 @@ class UserMypageViewSet(APIView):
         if action == action_search:
             user = orm.get_myself(self, request)
             recent_search_word = user.recent_search
-            print(decodedPayload['id'])
             count = 0
             for obj in recent_search_word:
                 if obj['user_pk'] == pk:

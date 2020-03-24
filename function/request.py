@@ -20,6 +20,7 @@ action = 'action' #분기처리
 email = 'email'
 password = 'password'
 nickname = 'nickname'
+user_type = 'user_type'
 email_auth_req_key = [action, email]
 
 
@@ -27,6 +28,14 @@ email_auth_req_key = [action, email]
 
 ##### 회원가입
 sign_req_keys = [email, password, nickname]
+
+
+###소셜 회원 아이디 체크
+social_check_req_keys = [email, user_type]
+
+##소셜 로그인 회원가입
+social_sign_req_keys = [email, nickname, user_type]
+
 
 #############패스워드 찾기
 find_password_req_keys = [email, password]
@@ -59,8 +68,8 @@ caption = 'caption'
 comment_create_keys = [caption]
 
 
-def my_email(self, request):
+def my_user_uid(self, request):
     string = request.headers["Authorization"]
     decodedPayload = jwt.decode(string[4:],None,None)
 
-    return decodedPayload['id']
+    return decodedPayload['user_uid']

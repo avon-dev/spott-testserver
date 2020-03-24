@@ -46,7 +46,8 @@ class ReportView(APIView):
         decodedPayload = jwt.decode(string[4:],None,None)
 
         try:
-            reporter = User.objects.get(user_uid = decodedPayload['id'])
+            reporter = User.objects.get(user_uid = decodedPayload['user_uid'])
+            print(request_data['post_id'])
             post = Post.objects.get(pk = request_data['post_id'])
         except ObjectDoesNotExist as e:
             result = Return_Module.ReturnPattern.error_text(str(e))

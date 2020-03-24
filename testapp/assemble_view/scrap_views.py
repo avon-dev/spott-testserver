@@ -16,12 +16,12 @@ class Scrap(APIView):
         string = request.headers["Authorization"]
         decodedPayload = jwt.decode(string[4:],None,None)
         try:
-            user = User.objects.get(user_uid = decodedPayload["id"])
+            user = User.objects.get(user_uid = decodedPayload["user_uid"])
             post = Post.objects.get(pk=pk)
         except ObjectDoesNotExist as e:
             result = Return_Module.ReturnPattern.error_text(str(e))
             return Response(result,status = status.HTTP_404_NOT_FOUND)
-        print(decodedPayload['id'])
+
         # user_data = UserData.objects.get(user = user)
 
         try:
@@ -51,7 +51,7 @@ class Scrap(APIView):
         decodedPayload = jwt.decode(string[4:],None,None)
 
         try:
-            user = User.objects.get(user_uid = decodedPayload["id"])
+            user = User.objects.get(user_uid = decodedPayload["user_uid"])
             post = Post.objects.get(pk = pk) #해당 포스트 가져오기
         except ObjectDoesNotExist as e:
             result = Return_Module.ReturnPattern.error_text(str(e))
@@ -59,7 +59,7 @@ class Scrap(APIView):
 
 
         # user_data = UserData.objects.get(user = user)
-        print(decodedPayload['id'])
+
         result = Return_Module.ReturnPattern.success_text\
         ("success delete",result=False ,count=-1)
         try:
@@ -84,12 +84,13 @@ class MultiScrap(APIView):
         decodedPayload = jwt.decode(string[4:],None,None)
 
         try:
-            user = User.objects.get(user_uid = decodedPayload["id"])
+            user = User.objects.get(user_uid = decodedPayload["user_uid"])
         except User.DoesNotExist as e:
             result = Return_Module.ReturnPattern.error_text(str(e))
             return Response(result,status = status.HTTP_404_NOT_FOUND)
-
-        scrap = Scrapt.objects.filter(user_id = user.id)
+        report = Report.objects.filter(handling = Report.before_posts, reporter= user)
+        post = Post.objects.filter(is_active = True, problem = False, is_public = True).exclude(phopo_reports_post_related__in = report)
+        scrap = Scrapt.objects.filter(user_id = user.id, post__in = post)
         # serial = ScrapAllSerializer(user.get_scrap.all().order_by('scrap_users__id'),many=True)
         serial = ScrapSerializer(scrap,many=True)
         result = Return_Module.ReturnPattern.success_list_text\
@@ -101,7 +102,7 @@ class MultiScrap(APIView):
         scrap_required_keys = ['ids']
         # sending으로 안 묶여 있으면 에러 처리
         try:
-            request_data = Return_Module.multi_string_to_dict(request.data) #sending 파라미터에서 value 추출해서 dict 형태로 변형
+            request_data = Return_Module.string_to_dict(request.GET) #sending 파라미터에서 value 추출해서 dict 형태로 변형
         except KeyError as e:
             # print(f"key error: missing key name {e}") #에러 로그
             result = Error_Module.ErrorHandling.none_bundle(req.request_bundle, e) #클라이언트에 보낼 에러 메시지

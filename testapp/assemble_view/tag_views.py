@@ -23,25 +23,45 @@ class HashTagView(APIView):
         begin_item = page
         last_index = page + 31
 
+        string = request.headers["Authorization"]
+        decodedPayload = jwt.decode(string[4:],None,None)
+        user = User.objects.get(is_active = True, user_uid = decodedPayload["user_uid"])
+        report = Report.objects.filter(handling = Report.before_posts, reporter= user)
         #생성일 넘겨주는 부분
         posts_obj = Post.objects.filter(is_active = True, problem = False, \
-        is_public = True, hashtag__name = tag_name).order_by('-id').distinct('id')[begin_item:last_index]\
+        is_public = True, hashtag__name = tag_name.lower()).order_by('-id').\
+                    exclude(phopo_reports_post_related__in = report).\
+                    distinct('id')[begin_item:last_index]\
                     if craeted_time == ""\
-                    else Post.objects.filter(is_active = True, problem = False, is_public = True, hashtag__name = tag_name, created__lte=craeted_time).order_by('-id').distinct('id')[begin_item:last_index]
+                    else Post.objects.filter(is_active = True, problem = False, is_public = True, hashtag__name = tag_name.lower(), created__lte=craeted_time).\
+                    exclude(phopo_reports_post_related__in = report).\
+                    order_by('-id').distinct('id')[begin_item:last_index]
 
         posts_obj_cached = posts_obj
 
         pageable = False if posts_obj_cached.count() < 31 else True
 
-        created_time = str(posts_obj_cached[0].created) if craeted_time == "" else craeted_time
+        try:
+            created_time = str(posts_obj_cached[0].created) if craeted_time == "" else craeted_time
+        except IndexError as e:
+            result = Return_Module.ReturnPattern.success_text\
+            ("show Posts with that tag(empty)", items = [], created_time = "", pageable = pageable)
+            return Response(result,status=status.HTTP_200_OK)
+        else:
+            home_serializers = HomeSerializer(posts_obj_cached[0:30],many=True)
+
+
+
+
+
+
         home_serializers = HomeSerializer(posts_obj_cached[0:30],many=True)
 
         if action == action_search:
             string = request.headers["Authorization"]
             decodedPayload = jwt.decode(string[4:],None,None)
-            user = User.objects.get(user_uid = decodedPayload['id'])
+            user = User.objects.get(user_uid = decodedPayload['user_uid'])
             recent_search_word = user.recent_search
-            print(decodedPayload['id'])
             count = 0
             for obj in recent_search_word:
                 if obj['tag_name'] == tag_name:

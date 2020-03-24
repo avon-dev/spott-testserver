@@ -124,7 +124,7 @@ class AccountView(APIView):
             # print(f"key error: missing key name {e}") #에러 로그
             result = Error_Module.ErrorHandling.none_bundle(req.request_bundle, e) #클라이언트에 보낼 에러 메시지
             return Response(result,status = status.HTTP_400_BAD_REQUEST)
-        print(str(request_data))
+
         #필수키가 없을 경우 400 에러 반환
         try:
             print(str(request.data))
@@ -136,7 +136,7 @@ class AccountView(APIView):
             return Response(result,status = status.HTTP_400_BAD_REQUEST)
         else:
             email = request_data[req.email]
-            password = request_data[req.password]
+            password = security.RSAPublicKey().out_password(request_data['password'])
             nickname = request_data[req.nickname]
 
 
@@ -176,14 +176,14 @@ class AccountView(APIView):
             return Response(result,status = status.HTTP_400_BAD_REQUEST)
         else:
             email = request_data[req.email]
-            password = request_data[req.password]
+            password = security.RSAPublicKey().out_password(request_data['password'])
 
 
 
 
         try:
             result = Return_Module.ReturnPattern.success_text("update success password",result=True)
-            user = User.objects.get(is_active = True, email = email)
+            user = orm.get_user_email(self, email)
         except ObjectDoesNotExist as e:
             result = Return_Module.ReturnPattern.error_text(str(e))
             return Response(result, status = status.HTTP_404_NOT_FOUND)
@@ -195,21 +195,116 @@ class AccountView(APIView):
 
 
 
+class SocialAccountView(APIView):
+    permission_classes = []
 
+
+
+
+    def get(self, request, format=None):
+        # sending으로 안 묶여 있으면 에러 처리
+        try:
+            request_data = Return_Module.string_to_dict(request.GET) #sending 파라미터에서 value 추출해서 dict 형태로 변형
+        except KeyError as e:
+            # print(f"key error: missing key name {e}") #에러 로그
+            result = Error_Module.ErrorHandling.none_bundle(req.request_bundle, e) #클라이언트에 보낼 에러 메시지
+            return Response(result,status = status.HTTP_400_BAD_REQUEST)
+
+        try:
+            for key in req.social_check_req_keys:
+                request_data[key]
+        except KeyError as e:
+            error_dict = Error_Module.ErrorHandling.none_feild(req.social_check_req_keys,request_data.keys(), e)
+            result = Return_Module.ReturnPattern.error_text(error_dict)
+            return Response(result,status = status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(email = request_data['email'], user_type = request_data['user_type'])
+        except User.DoesNotExist as e:
+            result = Return_Module.ReturnPattern.success_text("Go to sign up",sign_up=True)
+        else:
+            result = Return_Module.ReturnPattern.success_text("Go to create token",sign_up=False)
+        return Response(result)
+
+
+
+    @transaction.atomic
+    def post(self, request, format=None):
+        # 에러 처리부분 성공 조건이 아니면 함수 리턴
+
+        # sending으로 안 묶여 있으면 에러 처리
+        try:
+            request_data = Return_Module.string_to_dict(request.data) #sending 파라미터에서 value 추출해서 dict 형태로 변형
+        except KeyError as e:
+            # print(f"key error: missing key name {e}") #에러 로그
+            result = Error_Module.ErrorHandling.none_bundle(req.request_bundle, e) #클라이언트에 보낼 에러 메시지
+            return Response(result,status = status.HTTP_400_BAD_REQUEST)
+
+        try:
+            print(str(request.data))
+            for key in req.social_sign_req_keys:
+                request_data[key]
+        except KeyError as e:
+            error_dict = Error_Module.ErrorHandling.none_feild(req.social_sign_req_keys,request_data.keys(), e)
+            result = Return_Module.ReturnPattern.error_text(error_dict)
+            return Response(result,status = status.HTTP_400_BAD_REQUEST)
+        else:
+            email = request_data[req.email]
+            if request_data['user_type'] == User.google:
+                user_type = User.google
+                password = "google"
+            else:
+                user_type = User.facebook
+                password = "facebook"
+            nickname = request_data[req.nickname]
+
+
+        try:
+            nickname_check = orm.get_user_with_nickname(self,nickname)
+        except ObjectDoesNotExist as e:
+                #레코드 생성
+            orm.social_user_create(self, email, password, nickname, user_type)
+            result = Return_Module.ReturnPattern.success_text("Create success",sign_up=True)
+            return Response(result, status= status.HTTP_201_CREATED)
+
+        else:
+            result = Return_Module.ReturnPattern.success_text\
+            (sign_up=False, message="Create fail")
+            return Response(result, status = status.HTTP_200_OK)
 ##############################
 ###########Legacy############
 ##############################
-class Login(APIView):
+# class Login(APIView):
+#     # authentication_classes = [JSONWebTokenAuthentication,]
+#     permission_classes = ()
+#     def get(self, request, format=None):
+#         # post_list = UserSerializer(posts, many=True)
+#         # string = request.headers["Authorization"]
+#         # decodedPayload = jwt.decode(string[4:],None,None)
+#         # user = User.objects.get(user_uid = decodedPayload["user_uid"])
+#         # user.is_login = True
+#         # user.last_login = datetime.datetime.now()
+#         # user.save()
+#         # serializers = LoginSerializer(user)
+#         # result = Return_Module.ReturnPattern.success_text("Login success",result=True, **serializers.data)
+#
+#         result = Return_Module.ReturnPattern.success_text("success",result=True)
+#         return Response(result)
+
+
+class PublicKeyView(APIView):
     # authentication_classes = [JSONWebTokenAuthentication,]
-    permission_classes = (IsAuthenticated,)
+    permission_classes = ()
     def get(self, request, format=None):
         # post_list = UserSerializer(posts, many=True)
-        string = request.headers["Authorization"]
-        decodedPayload = jwt.decode(string[4:],None,None)
-        user = User.objects.get(user_uid = decodedPayload["id"])
-        user.is_login = True
-        user.last_login = datetime.datetime.now()
-        user.save()
-        serializers = LoginSerializer(user)
-        result = Return_Module.ReturnPattern.success_text("Login success",result=True, **serializers.data)
+        # string = request.headers["Authorization"]
+        # decodedPayload = jwt.decode(string[4:],None,None)
+        # user = User.objects.get(user_uid = decodedPayload["user_uid"])
+        # user.is_login = True
+        # user.last_login = datetime.datetime.now()
+        # user.save()
+        # serializers = LoginSerializer(user)
+        # result = Return_Module.ReturnPattern.success_text("Login success",result=True, **serializers.data)
+
+        result = Return_Module.ReturnPattern.success_text("success",result=True)
         return Response(result)
