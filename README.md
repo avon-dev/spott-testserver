@@ -19,8 +19,8 @@
 + Python 3.6
 + PostgreSQL 10.12
 + NGINX 1.14
-+ pip == 20.0.2
-+ libpq-dev == 12.2-2
++ pip 20.0.2
++ libpq-dev 12.2-2
 + postgresql-contrib
 
 #### 데이터베이스 세팅
