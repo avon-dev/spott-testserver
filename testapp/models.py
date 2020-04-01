@@ -38,7 +38,7 @@ class User(AbstractBaseUser, PermissionsMixin): #나중에 널 값 처리
         (facebook, '페이스북 유저')
     )
     user_type = models.IntegerField(default = basic, choices = USER_TYPE, verbose_name = '가입한 방식')
-    user_uid = models.CharField(max_length=255, unique = True) #이메일 해싱 삭제를 했어 lwbvv@naver.com
+    user_uid = models.CharField(max_length=255, unique = True) #이메일 해싱
     email = models.EmailField(_('email address'))
     password = models.CharField(_('password'), max_length=200)
     nickname = models.CharField(max_length=150)
